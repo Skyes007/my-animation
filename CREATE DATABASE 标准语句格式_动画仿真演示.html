@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL CREATE DATABASE 语句动画演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2a4d8e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            padding: clamp(12px, 3vw, 20px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 2px solid #4fc3f7;
+        }
+
+        .header h1 {
+            font-size: clamp(1.3rem, 4vw, 2.2rem);
+            margin-bottom: 8px;
+            color: #4fc3f7;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        .header p {
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .code-section {
+            flex: 1;
+            padding: clamp(8px, 1.5vw, 15px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 20, 40, 0.8);
+            border-right: 1px solid rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .code-section {
+                border-right: none;
+                border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+            }
+        }
+
+        /* 标准格式样式 - 占左侧40%高度 */
+        .syntax-format {
+            background: linear-gradient(135deg, #0d1b2a, #1e3a5f);
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            margin-bottom: 12px;
+            border: 2px solid #4fc3f7;
+            box-shadow: 
+                0 0 15px rgba(79, 195, 247, 0.4),
+                inset 0 0 15px rgba(79, 195, 247, 0.1);
+            position: relative;
+            overflow: hidden;
+            flex: 0 0 40%; /* 占左侧40%高度 */
+            overflow-y: auto; /* 允许垂直滚动 */
+        }
+
+        .syntax-format::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            animation: shimmer 3s infinite;
+        }
+
+        .syntax-title {
+            color: #4fc3f7;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
+        }
+
+        .syntax-line {
+            margin-bottom: 4px;
+            padding: 6px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            border-radius: 6px;
+            background: rgba(79, 195, 247, 0.15);
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            line-height: 1.3;
+        }
+
+        .syntax-line:hover {
+            background: rgba(79, 195, 247, 0.25);
+            transform: translateX(3px);
+        }
+
+        .syntax-comment {
+            color: #a8d8ff;
+            font-style: italic;
+            margin-left: 8px;
+            font-size: clamp(0.7rem, 1.3vw, 0.8rem);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .required {
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        .optional {
+            color: #ffb74d;
+        }
+
+        .code-editor {
+            flex: 1; /* 占左侧60%高度 */
+            background: #0d1b2a;
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            overflow: auto; /* 允许滚动 */
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.3);
+        }
+
+        .code-line {
+            margin-bottom: 6px;
+            padding: 6px 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            background: rgba(255, 255, 255, 0.05);
+            line-height: 1.3;
+        }
+
+        .code-line.active {
+            background: rgba(79, 195, 247, 0.2);
+            border-left: 3px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .code-line.completed {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 3px solid #4caf50;
+        }
+
+        .animation-section {
+            flex: 1;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 30, 60, 0.6);
+        }
+
+        .animation-section h2 {
+            margin-bottom: 12px;
+            color: #4fc3f7;
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+        }
+
+        .animation-container {
+            flex: 1;
+            background: rgba(13, 27, 42, 0.7);
+            border-radius: 10px;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .step-explanation {
+            margin-top: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(0, 30, 60, 0.9), rgba(0, 50, 100, 0.9));
+            border-radius: 8px;
+            border-left: 4px solid #4fc3f7;
+            width: 95%;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: clamp(12px, 2vw, 20px);
+            gap: clamp(8px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-top: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .btn {
+            padding: clamp(8px, 2vw, 12px) clamp(15px, 3vw, 25px);
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            color: white;
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #1976d2, #1e88e5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #546e7a;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-container {
+            padding: clamp(10px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            background-size: 200% 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+            animation: progressShimmer 2s infinite;
+        }
+
+        .step-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+        }
+
+        .step-indicator {
+            padding: 6px 12px;
+            border-radius: 15px;
+            background: rgba(79, 195, 247, 0.2);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .step-indicator.active {
+            background: #4fc3f7;
+            color: #0d1b2a;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            transform: scale(1.1);
+        }
+
+        /* 动画区域样式 */
+        .database-animation {
+            width: 100%;
+            height: 250px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .database-icon {
+            width: 100px;
+            height: 140px;
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            border-radius: 8px 8px 0 0;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            box-shadow: 0 0 20px rgba(79, 195, 247, 0.7);
+            transition: all 0.5s ease;
+        }
+
+        .database-icon::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            width: 120px;
+            height: 15px;
+            background: #1976d2;
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* 动画关键帧 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes progressShimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(79, 195, 247, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+        }
+
+        @keyframes creatingDatabase {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes databaseCreated {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); box-shadow: 0 0 30px rgba(79, 195, 247, 1); }
+            100% { transform: scale(1); }
+        }
+
+        .database-icon.creating {
+            animation: creatingDatabase 2s ease-in-out;
+        }
+
+        .database-icon.created {
+            animation: databaseCreated 1.5s ease-in-out;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
+            color: #4caf50;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .feature-highlight {
+            position: absolute;
+            background: linear-gradient(135deg, #fff, #e3f2fd);
+            color: #1565c0;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            font-weight: bold;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(15px);
+            transition: all 0.3s ease;
+            border: 1px solid #bbdefb;
+        }
+
+        .feature-highlight.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .database-name {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .database-name.show {
+            opacity: 1;
+        }
+
+        .floating-text {
+            position: absolute;
+            color: #4fc3f7;
+            font-size: clamp(0.8rem, 1.5vw, 1rem);
+            font-weight: bold;
+            opacity: 0;
+            animation: floatText 2s ease-in-out;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        @keyframes floatText {
+            0% { transform: translateY(0); opacity: 0; }
+            50% { transform: translateY(-25px); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+
+        .format-key {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 6px;
+            text-align: center;
+            line-height: 14px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .required-key {
+            background: #4fc3f7;
+            color: white;
+        }
+
+        .optional-key {
+            background: #ffb74d;
+            color: white;
+        }
+
+        .timer-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #4fc3f7;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .variables-table {
+            width: 100%;
+            max-width: 500px;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            display: none;
+        }
+
+        .variables-table th {
+            background: rgba(79, 195, 247, 0.3);
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .variables-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .variables-table tr:last-child td {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SQL CREATE DATABASE 语句动画演示</h1>
+            <p>通过分步动画演示CREATE DATABASE语句的完整语法和执行过程</p>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="step-indicators" id="step-indicators">
+                <!-- 步骤指示器将通过JS动态生成 -->
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="code-section">
+                <!-- 紧凑的标准格式 -->
+                <div class="syntax-format">
+                    <div class="syntax-title">📋 CREATE DATABASE 标准格式</div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">CREATE DATABASE database_name</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[CHARACTER SET charset_name]</span>
+                        <span class="syntax-comment"># 字符集设置（可选）</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[COLLATE collation_name]</span>
+                        <span class="syntax-comment"># 排序规则（可选）</span>
+                    </div>
+                </div>
+                
+                <div class="code-editor" id="code-editor">
+                    <!-- 代码行将通过JS动态生成 -->
+                </div>
+            </div>
+            
+            <div class="animation-section">
+                <h2>动画演示</h2>
+                <div class="animation-container">
+                    <div class="database-animation" id="database-animation">
+                        <!-- 动画元素将通过JS动态生成 -->
+                    </div>
+                    <div class="step-explanation" id="step-explanation">
+                        点击"开始演示"按钮查看CREATE DATABASE语句的完整执行过程
+                    </div>
+                    <div class="success-message" id="success-message"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="prev-btn" disabled>上一步</button>
+            <button class="btn" id="play-btn">开始演示</button>
+            <button class="btn" id="pause-btn" disabled>暂停</button>
+            <button class="btn" id="next-btn" disabled>下一步</button>
+            <button class="btn" id="reset-btn">重置</button>
+        </div>
+    </div>
+
+    <script>
+        // 步骤数据 - 添加了查看字符集和排序规则的步骤
+        const steps = [
+            {
+                code: "CREATE DATABASE my_database;",
+                explanation: "基本语法：使用CREATE DATABASE语句创建数据库，这是最基础的创建方式，只需要指定数据库名称",
+                animation: "showBasicSyntax",
+                successMessage: "✅ 数据库创建成功！这是最基本的CREATE DATABASE语法，只指定了数据库名称。"
+            },
+            {
+                code: "CREATE DATABASE my_database CHARACTER SET utf8mb4;",
+                explanation: "字符集设置：使用CHARACTER SET指定数据库的字符集，utf8mb4支持所有Unicode字符包括emoji表情",
+                animation: "showCharacterSet",
+                successMessage: "✅ 字符集设置成功！utf8mb4字符集支持包括emoji在内的所有Unicode字符。"
+            },
+            {
+                code: "CREATE DATABASE my_database COLLATE utf8mb4_unicode_ci;",
+                explanation: "排序规则：使用COLLATE指定数据库的排序规则，影响字符串比较和排序的方式",
+                animation: "showCollation",
+                successMessage: "✅ 排序规则设置成功！utf8mb4_unicode_ci支持不区分大小写的Unicode排序。"
+            },
+            {
+                code: "CREATE DATABASE my_database CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;",
+                explanation: "完整语法：同时指定字符集和排序规则，这是创建数据库的最佳实践方式",
+                animation: "showCompleteSyntax",
+                successMessage: "✅ 完整语法执行成功！同时指定字符集和排序规则是最佳实践。"
+            },
+            {
+                code: "SHOW VARIABLES LIKE 'character_set_%';",
+                explanation: "查看字符集：使用SHOW VARIABLES语句查看当前数据库的字符集设置",
+                animation: "showCharacterSetVariables",
+                successMessage: "✅ 字符集查看成功！可以看到数据库的各种字符集配置。"
+            },
+            {
+                code: "SHOW VARIABLES LIKE 'collation_%';",
+                explanation: "查看排序规则：使用SHOW VARIABLES语句查看当前数据库的排序规则设置",
+                animation: "showCollationVariables",
+                successMessage: "✅ 排序规则查看成功！可以看到数据库的各种排序规则配置。"
+            },
+            {
+                code: "-- 数据库创建完成",
+                explanation: "总结：CREATE DATABASE语句已完成执行，数据库已准备就绪，包含所有配置选项",
+                animation: "showCompletion",
+                successMessage: "🎉 CREATE DATABASE语句演示完成！数据库已成功创建并配置所有选项。"
+            }
+        ];
+
+        // 当前步骤索引
+        let currentStep = 0;
+        let isPlaying = false;
+        let animationInterval;
+        let stepTimer;
+
+        // 初始化
+        function init() {
+            renderCodeLines();
+            renderStepIndicators();
+            setupEventListeners();
+            updateControls();
+        }
+
+        // 渲染代码行
+        function renderCodeLines() {
+            const codeEditor = document.getElementById('code-editor');
+            codeEditor.innerHTML = '';
+            
+            steps.forEach((step, index) => {
+                const codeLine = document.createElement('div');
+                codeLine.className = 'code-line';
+                codeLine.textContent = step.code;
+                codeLine.id = `code-line-${index}`;
+                codeEditor.appendChild(codeLine);
+            });
+        }
+
+        // 渲染步骤指示器
+        function renderStepIndicators() {
+            const stepIndicators = document.getElementById('step-indicators');
+            stepIndicators.innerHTML = '';
+            
+            steps.forEach((_, index) => {
+                const indicator = document.createElement('div');
+                indicator.className = 'step-indicator';
+                indicator.textContent = `步骤 ${index + 1}`;
+                indicator.id = `step-indicator-${index}`;
+                stepIndicators.appendChild(indicator);
+            });
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            document.getElementById('play-btn').addEventListener('click', playAnimation);
+            document.getElementById('pause-btn').addEventListener('click', pauseAnimation);
+            document.getElementById('prev-btn').addEventListener('click', prevStep);
+            document.getElementById('next-btn').addEventListener('click', nextStep);
+            document.getElementById('reset-btn').addEventListener('click', resetAnimation);
+        }
+
+        // 播放动画
+        function playAnimation() {
+            if (currentStep >= steps.length) {
+                resetAnimation();
+            }
+            
+            isPlaying = true;
+            updateControls();
+            
+            // 设置每步7秒的自动播放
+            animationInterval = setInterval(() => {
+                if (currentStep < steps.length - 1) {
+                    nextStep();
+                } else {
+                    pauseAnimation();
+                }
+            }, 7000);
+        }
+
+        // 暂停动画
+        function pauseAnimation() {
+            isPlaying = false;
+            clearInterval(animationInterval);
+            if (stepTimer) clearTimeout(stepTimer);
+            updateControls();
+        }
+
+        // 下一步
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                updateStep();
+            }
+        }
+
+        // 上一步
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateStep();
+            }
+        }
+
+        // 重置动画
+        function resetAnimation() {
+            pauseAnimation();
+            currentStep = 0;
+            updateStep();
+        }
+
+        // 更新步骤
+        function updateStep() {
+            // 更新代码高亮
+            document.querySelectorAll('.code-line').forEach((line, index) => {
+                line.classList.remove('active', 'completed');
+                if (index === currentStep) {
+                    line.classList.add('active');
+                } else if (index < currentStep) {
+                    line.classList.add('completed');
+                }
+            });
+            
+            // 更新步骤指示器
+            document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+                indicator.classList.remove('active');
+                if (index === currentStep) {
+                    indicator.classList.add('active');
+                }
+            });
+            
+            // 更新进度条
+            const progress = document.getElementById('progress');
+            progress.style.width = `${(currentStep / (steps.length - 1)) * 100}%`;
+            
+            // 更新步骤说明
+            const stepExplanation = document.getElementById('step-explanation');
+            stepExplanation.textContent = steps[currentStep].explanation;
+            
+            // 更新消息
+            const successMessage = document.getElementById('success-message');
+            successMessage.style.display = 'none';
+            
+            // 执行动画
+            executeAnimation(steps[currentStep].animation);
+            
+            // 更新控制按钮状态
+            updateControls();
+        }
+
+        // 更新控制按钮状态
+        function updateControls() {
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('next-btn').disabled = currentStep === steps.length - 1;
+            document.getElementById('play-btn').disabled = isPlaying;
+            document.getElementById('pause-btn').disabled = !isPlaying;
+        }
+
+        // 执行动画
+        function executeAnimation(animationType) {
+            const animationContainer = document.getElementById('database-animation');
+            const successMessage = document.getElementById('success-message');
+            
+            // 清除之前的动画
+            animationContainer.innerHTML = '';
+            successMessage.style.display = 'none';
+            
+            // 创建数据库图标
+            const databaseIcon = document.createElement('div');
+            databaseIcon.className = 'database-icon';
+            databaseIcon.textContent = 'my_database';
+            animationContainer.appendChild(databaseIcon);
+            
+            // 创建数据库名称标签
+            const dbName = document.createElement('div');
+            dbName.className = 'database-name';
+            dbName.textContent = '数据库名称: my_database';
+            animationContainer.appendChild(dbName);
+            
+            // 根据动画类型执行不同的动画
+            switch(animationType) {
+                case 'showBasicSyntax':
+                    databaseIcon.classList.add('creating');
+                    setTimeout(() => {
+                        databaseIcon.classList.remove('creating');
+                        databaseIcon.classList.add('created');
+                        dbName.classList.add('show');
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 3000);
+                    break;
+                    
+                case 'showCharacterSet':
+                    databaseIcon.classList.add('creating');
+                    setTimeout(() => {
+                        databaseIcon.classList.remove('creating');
+                        databaseIcon.classList.add('created');
+                        dbName.classList.add('show');
+                        
+                        // 添加字符集提示
+                        const charsetHint = document.createElement('div');
+                        charsetHint.className = 'feature-highlight';
+                        charsetHint.textContent = '字符集: utf8mb4';
+                        charsetHint.style.top = '40px';
+                        charsetHint.style.left = '120px';
+                        animationContainer.appendChild(charsetHint);
+                        
+                        setTimeout(() => {
+                            charsetHint.classList.add('show');
+                        }, 500);
+                        
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 3000);
+                    break;
+                    
+                case 'showCollation':
+                    databaseIcon.classList.add('creating');
+                    setTimeout(() => {
+                        databaseIcon.classList.remove('creating');
+                        databaseIcon.classList.add('created');
+                        dbName.classList.add('show');
+                        
+                        // 添加排序规则提示
+                        const collationHint = document.createElement('div');
+                        collationHint.className = 'feature-highlight';
+                        collationHint.textContent = '排序规则: utf8mb4_unicode_ci';
+                        collationHint.style.top = '65px';
+                        collationHint.style.left = '120px';
+                        animationContainer.appendChild(collationHint);
+                        
+                        setTimeout(() => {
+                            collationHint.classList.add('show');
+                        }, 500);
+                        
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 3000);
+                    break;
+                    
+                case 'showCompleteSyntax':
+                    databaseIcon.classList.add('creating');
+                    setTimeout(() => {
+                        databaseIcon.classList.remove('creating');
+                        databaseIcon.classList.add('created');
+                        dbName.classList.add('show');
+                        
+                        // 添加所有特性提示
+                        const features = [
+                            {text: '字符集: utf8mb4', top: '40px'},
+                            {text: '排序规则: utf8mb4_unicode_ci', top: '65px'}
+                        ];
+                        
+                        features.forEach(feature => {
+                            const hint = document.createElement('div');
+                            hint.className = 'feature-highlight';
+                            hint.textContent = feature.text;
+                            hint.style.top = feature.top;
+                            hint.style.left = '120px';
+                            animationContainer.appendChild(hint);
+                            
+                            setTimeout(() => {
+                                hint.classList.add('show');
+                            }, 500);
+                        });
+                        
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 4000);
+                    break;
+                    
+                case 'showCharacterSetVariables':
+                    databaseIcon.classList.add('created');
+                    dbName.classList.add('show');
+                    
+                    // 创建字符集变量表格
+                    const charsetTable = document.createElement('table');
+                    charsetTable.className = 'variables-table';
+                    charsetTable.id = 'charset-table';
+                    
+                    const charsetHeader = `
+                        <tr>
+                            <th>变量名</th>
+                            <th>值</th>
+                        </tr>
+                        <tr>
+                            <td>character_set_client</td>
+                            <td>utf8mb4</td>
+                        </tr>
+                        <tr>
+                            <td>character_set_connection</td>
+                            <td>utf8mb4</td>
+                        </tr>
+                        <tr>
+                            <td>character_set_database</td>
+                            <td>utf8mb4</td>
+                        </tr>
+                        <tr>
+                            <td>character_set_filesystem</td>
+                            <td>binary</td>
+                        </tr>
+                        <tr>
+                            <td>character_set_results</td>
+                            <td>utf8mb4</td>
+                        </tr>
+                        <tr>
+                            <td>character_set_server</td>
+                            <td>utf8mb4</td>
+                        </tr>
+                        <tr>
+                            <td>character_set_system</td>
+                            <td>utf8</td>
+                        </tr>
+                    `;
+                    
+                    charsetTable.innerHTML = charsetHeader;
+                    animationContainer.appendChild(charsetTable);
+                    
+                    setTimeout(() => {
+                        charsetTable.style.display = 'table';
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 1000);
+                    break;
+                    
+                case 'showCollationVariables':
+                    databaseIcon.classList.add('created');
+                    dbName.classList.add('show');
+                    
+                    // 创建排序规则变量表格
+                    const collationTable = document.createElement('table');
+                    collationTable.className = 'variables-table';
+                    collationTable.id = 'collation-table';
+                    
+                    const collationHeader = `
+                        <tr>
+                            <th>变量名</th>
+                            <th>值</th>
+                        </tr>
+                        <tr>
+                            <td>collation_connection</td>
+                            <td>utf8mb4_unicode_ci</td>
+                        </tr>
+                        <tr>
+                            <td>collation_database</td>
+                            <td>utf8mb4_unicode_ci</td>
+                        </tr>
+                        <tr>
+                            <td>collation_server</td>
+                            <td>utf8mb4_unicode_ci</td>
+                        </tr>
+                    `;
+                    
+                    collationTable.innerHTML = collationHeader;
+                    animationContainer.appendChild(collationTable);
+                    
+                    setTimeout(() => {
+                        collationTable.style.display = 'table';
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 1000);
+                    break;
+                    
+                case 'showCompletion':
+                    databaseIcon.classList.add('creating');
+                    setTimeout(() => {
+                        databaseIcon.classList.remove('creating');
+                        databaseIcon.classList.add('created');
+                        dbName.classList.add('show');
+                        
+                        // 添加浮动文字效果
+                        const floatingText = document.createElement('div');
+                        floatingText.className = 'floating-text';
+                        floatingText.textContent = '数据库创建成功！';
+                        floatingText.style.left = '50%';
+                        floatingText.style.top = '50%';
+                        animationContainer.appendChild(floatingText);
+                        
+                        // 添加所有特性提示
+                        const features = [
+                            {text: '字符集: utf8mb4', top: '40px'},
+                            {text: '排序规则: utf8mb4_unicode_ci', top: '65px'}
+                        ];
+                        
+                        features.forEach(feature => {
+                            const hint = document.createElement('div');
+                            hint.className = 'feature-highlight';
+                            hint.textContent = feature.text;
+                            hint.style.top = feature.top;
+                            hint.style.left = '120px';
+                            animationContainer.appendChild(hint);
+                            
+                            setTimeout(() => {
+                                hint.classList.add('show');
+                            }, 500);
+                        });
+                        
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 3000);
+                    break;
+            }
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
