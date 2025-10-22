@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL表创建过程演示 - T_Course表</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            max-width: 1400px;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #1a73e8, #0d47a1);
+            color: white;
+            padding: clamp(12px, 2vw, 20px);
+            text-align: center;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .header h1 {
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .left-panel {
+            flex: 1;
+            padding: clamp(15px, 2vw, 25px);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding: clamp(15px, 2vw, 25px);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e0e0e0;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: #1a73e8;
+            color: white;
+            box-shadow: 0 0 10px rgba(26, 115, 232, 0.7);
+            animation: pulse 1.5s infinite;
+        }
+
+        .step.completed {
+            background: #0f9d58;
+            color: white;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #1a73e8, #0d47a1);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .step-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .step-title {
+            font-size: clamp(1.2rem, 2vw, 1.6rem);
+            margin-bottom: 15px;
+            color: #1a73e8;
+            font-weight: 600;
+        }
+
+        .step-description {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            color: #555;
+        }
+
+        .code-editor {
+            background: #282c34;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #abb2bf;
+            font-size: 0.9rem;
+        }
+
+        .code-area {
+            flex: 1;
+            background: #1e2227;
+            border-radius: 5px;
+            padding: 15px;
+            overflow: auto;
+            position: relative;
+        }
+
+        .code-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #abb2bf;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            position: relative;
+            z-index: 2;
+        }
+
+        .code-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .hint {
+            background: #e3f2fd;
+            border-left: 4px solid #1a73e8;
+            padding: 10px 15px;
+            margin-top: 10px;
+            border-radius: 0 5px 5px 0;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+
+        .table-animation {
+            flex: 1;
+            background: #f5f9ff;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e1f5fe;
+            animation: glow 2s infinite alternate;
+        }
+
+        .table-title {
+            text-align: center;
+            font-size: clamp(1.2rem, 2vw, 1.6rem);
+            margin-bottom: 15px;
+            color: #0d47a1;
+            font-weight: 600;
+        }
+
+        .table-structure {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: auto;
+        }
+
+        .table-header, .table-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .table-header {
+            background: #e3f2fd;
+            font-weight: bold;
+            border-radius: 5px 5px 0 0;
+            color: #0d47a1;
+        }
+
+        .table-row {
+            transition: all 0.3s ease;
+        }
+
+        .table-row.highlight {
+            background: #e8f5e9;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .constraints-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .constraints-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0d47a1;
+            margin-bottom: 10px;
+        }
+
+        .constraint-item {
+            background: #e8f5e9;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border-left: 4px solid #4caf50;
+            font-size: 0.9rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-prev {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-next {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-validate {
+            background: #4caf50;
+            color: white;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            background: #e0e0e0;
+            color: #9e9e9e;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(26, 115, 232, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05); }
+            100% { box-shadow: 0 5px 20px rgba(33, 150, 243, 0.3); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .field-highlight {
+            background: #e1f5fe !important;
+            color: #01579b;
+            font-weight: bold;
+        }
+
+        .sql-example {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 12px;
+            margin-top: 10px;
+            border-left: 4px solid #1a73e8;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+
+        .allow-null {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 1px solid #666;
+            border-radius: 3px;
+            margin-right: 5px;
+            text-align: center;
+            line-height: 14px;
+            font-size: 12px;
+        }
+
+        .checked {
+            background: #4caf50;
+            color: white;
+            border-color: #4caf50;
+        }
+
+        .constraint-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #4caf50;
+            color: white;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            margin-bottom: 3px;
+        }
+
+        .constraint-primary {
+            background: #2196f3;
+        }
+
+        .constraint-unique {
+            background: #ff9800;
+        }
+
+        .constraint-check {
+            background: #9c27b0;
+        }
+
+        .constraint-foreign {
+            background: #f44336;
+        }
+
+        .constraint-default {
+            background: #607d8b;
+        }
+
+        .constraint-pending {
+            background: #ffeb3b;
+            color: #333;
+        }
+
+        /* 新增的动画样式 */
+        .code-validation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .code-validation.active {
+            opacity: 1;
+        }
+
+        .validation-success {
+            background: linear-gradient(90deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.2));
+            animation: successGlow 1.5s ease;
+        }
+
+        .validation-error {
+            background: linear-gradient(90deg, rgba(244, 67, 54, 0.1), rgba(244, 67, 54, 0.2));
+            animation: errorShake 0.5s ease;
+        }
+
+        @keyframes successGlow {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            50% { box-shadow: 0 0 20px 10px rgba(76, 175, 80, 0.3); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .typing-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: typing 2s infinite;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .typing-animation.active {
+            opacity: 1;
+        }
+
+        @keyframes typing {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .syntax-highlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .syntax-correct {
+            background: rgba(76, 175, 80, 0.05);
+        }
+
+        .syntax-error {
+            background: rgba(244, 67, 54, 0.05);
+        }
+
+        .validation-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff3e0;
+            border-radius: 5px;
+            border-left: 4px solid #ff9800;
+            font-size: 0.85rem;
+            color: #e65100;
+        }
+
+        .validation-details ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .validation-details li {
+            margin-bottom: 3px;
+        }
+
+        .describe-result {
+            background: #e8f5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid #4caf50;
+        }
+
+        .describe-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .describe-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .describe-table th {
+            background: #4caf50;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .describe-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .describe-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .describe-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .constraint-animation {
+            animation: constraintPulse 1.5s ease-in-out;
+        }
+
+        @keyframes constraintPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(33, 150, 243, 0.7); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MySQL表创建过程演示 - T_Course表</h1>
+            <p>创建课程信息表 - 交互式学习体验</p>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+        
+        <div class="content">
+            <div class="left-panel">
+                <div class="step-indicator">
+                    <div class="step active" id="step1">1</div>
+                    <div class="step" id="step2">2</div>
+                    <div class="step" id="step3">3</div>
+                    <div class="step" id="step4">4</div>
+                    <div class="step" id="step5">5</div>
+                </div>
+                
+                <div class="step-content">
+                    <h2 class="step-title" id="stepTitle">步骤1: 准备创建数据库</h2>
+                    <p class="step-description" id="stepDescription">首先，我们需要创建一个数据库来存储课程信息。我们将创建一个名为STUINFO的数据库。</p>
+                    
+                    <div class="code-editor">
+                        <div class="code-header">
+                            <span>SQL 编辑器</span>
+                            <span>MySQL</span>
+                        </div>
+                        <div class="code-area">
+                            <textarea class="code-input" id="codeInput" placeholder="在此输入SQL语句..."></textarea>
+                            <div class="code-background">
+                                <div class="code-validation" id="codeValidation"></div>
+                                <div class="typing-animation" id="typingAnimation"></div>
+                                <div class="syntax-highlight" id="syntaxHighlight"></div>
+                            </div>
+                        </div>
+                        <div class="hint" id="hint">提示：使用CREATE DATABASE语句创建数据库</div>
+                        <div class="sql-example" id="sqlExample">示例：CREATE DATABASE STUINFO;</div>
+                    </div>
+                    
+                    <div class="success-message" id="successMessage">✓ 正确！SQL语句执行成功。</div>
+                    <div class="error-message" id="errorMessage">✗ 错误！请检查SQL语句是否正确。</div>
+                    <div class="validation-details" id="validationDetails" style="display: none;"></div>
+                    
+                    <div class="controls">
+                        <button class="btn btn-prev" id="prevBtn" disabled>上一步</button>
+                        <button class="btn btn-validate" id="validateBtn">验证SQL</button>
+                        <button class="btn btn-next" id="nextBtn" disabled>下一步</button>
+                        <button class="btn btn-reset" id="resetBtn">重置</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="table-animation">
+                    <h3 class="table-title">T_Course 表结构</h3>
+                    <div class="table-structure">
+                        <div class="table-header">
+                            <div>列名</div>
+                            <div>数据类型</div>
+                            <div>允许空</div>
+                            <div>约束条件</div>
+                        </div>
+                        <div class="table-row" id="field1">
+                            <div>C_number</div>
+                            <div>CHAR(4)</div>
+                            <div><span class="allow-null checked">✓</span> NOT NULL</div>
+                            <div>
+                                <span class="constraint-badge constraint-pending" id="constraint1">PRIMARY KEY</span>
+                            </div>
+                        </div>
+                        <div class="table-row" id="field2">
+                            <div>C_name</div>
+                            <div>VARCHAR(20)</div>
+                            <div><span class="allow-null checked">✓</span> NOT NULL</div>
+                            <div></div>
+                        </div>
+                        <div class="table-row" id="field3">
+                            <div>Teacher</div>
+                            <div>VARCHAR(20)</div>
+                            <div><span class="allow-null">□</span> 允许NULL</div>
+                            <div></div>
+                        </div>
+                        <div class="table-row" id="field4">
+                            <div>Credit</div>
+                            <div>INT</div>
+                            <div><span class="allow-null">□</span> 允许NULL</div>
+                            <div></div>
+                        </div>
+                        <div class="table-row" id="field5">
+                            <div>Hours</div>
+                            <div>INT</div>
+                            <div><span class="allow-null">□</span> 允许NULL</div>
+                            <div></div>
+                        </div>
+                        <div class="table-row" id="field6">
+                            <div>Type</div>
+                            <div>VARCHAR(20)</div>
+                            <div><span class="allow-null">□</span> 允许NULL</div>
+                            <div></div>
+                        </div>
+                    </div>
+
+                    <div class="constraints-section">
+                        <div class="constraints-title">表级约束：</div>
+                        <div class="constraint-item" id="constraintDesc1">
+                            <strong>主键约束：</strong>C_number 字段作为主键，唯一标识每门课程
+                        </div>
+                    </div>
+
+                    <!-- DESCRIBE结果区域 -->
+                    <div class="describe-result" id="describeResult" style="display: none;">
+                        <div class="describe-title">DESCRIBE T_Course 结果</div>
+                        <table class="describe-table">
+                            <thead>
+                                <tr>
+                                    <th>Field</th>
+                                    <th>Type</th>
+                                    <th>Null</th>
+                                    <th>Key</th>
+                                    <th>Default</th>
+                                    <th>Extra</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>C_number</td>
+                                    <td>char(4)</td>
+                                    <td>NO</td>
+                                    <td>PRI</td>
+                                    <td>NULL</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>C_name</td>
+                                    <td>varchar(20)</td>
+                                    <td>NO</td>
+                                    <td></td>
+                                    <td>NULL</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Teacher</td>
+                                    <td>varchar(20)</td>
+                                    <td>YES</td>
+                                    <td></td>
+                                    <td>NULL</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Credit</td>
+                                    <td>int</td>
+                                    <td>YES</td>
+                                    <td></td>
+                                    <td>NULL</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Hours</td>
+                                    <td>int</td>
+                                    <td>YES</td>
+                                    <td></td>
+                                    <td>NULL</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Type</td>
+                                    <td>varchar(20)</td>
+                                    <td>YES</td>
+                                    <td></td>
+                                    <td>NULL</td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 步骤数据
+            const steps = [
+                {
+                    title: "步骤1: 准备创建数据库",
+                    description: "首先，我们需要创建一个数据库来存储课程信息。我们将创建一个名为STUINFO的数据库。",
+                    hint: "提示：使用CREATE DATABASE语句创建数据库",
+                    sqlExample: "CREATE DATABASE STUINFO;",
+                    correctAnswer: "CREATE DATABASE STUINFO;",
+                    highlightFields: [],
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('CREATE') && 
+                                       normalized.includes('DATABASE') &&
+                                       normalized.includes('STUINFO');
+                            }, 
+                            message: "必须包含 CREATE DATABASE 和数据库名称 STUINFO" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤2: 选择数据库",
+                    description: "现在我们需要选择刚刚创建的STUINFO数据库，以便在其中创建表。",
+                    hint: "提示：使用USE语句选择数据库",
+                    sqlExample: "USE STUINFO;",
+                    correctAnswer: "USE STUINFO;",
+                    highlightFields: [],
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('USE') && 
+                                       normalized.includes('STUINFO');
+                            }, 
+                            message: "必须包含 USE 和数据库名称 STUINFO" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤3: 创建T_Course表结构",
+                    description: "现在开始创建T_Course表。定义表的基本结构，包含所有字段但不包含主键约束。",
+                    hint: "提示：使用CREATE TABLE语句创建表，包含所有字段但不包含PRIMARY KEY约束",
+                    sqlExample: "CREATE TABLE T_Course (\n  C_number CHAR(4) NOT NULL,\n  C_name VARCHAR(20) NOT NULL,\n  Teacher VARCHAR(20),\n  Credit INT,\n  Hours INT,\n  Type VARCHAR(20)\n);",
+                    correctAnswer: "CREATE TABLE T_Course (C_number CHAR(4) NOT NULL, C_name VARCHAR(20) NOT NULL, Teacher VARCHAR(20), Credit INT, Hours INT, Type VARCHAR(20));",
+                    highlightFields: [1, 2, 3, 4, 5, 6],
+                    updateConstraints: function() {
+                        // 第三步不添加约束，保持"待添加"状态
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('CREATE') && 
+                                       normalized.includes('TABLE') &&
+                                       normalized.includes('T_COURSE');
+                            }, 
+                            message: "必须包含 CREATE TABLE 和表名称 T_Course" 
+                        },
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                // 宽松的字段检查
+                                const hasCNumber = normalized.includes('C_NUMBER') && normalized.includes('CHAR');
+                                const hasCName = normalized.includes('C_NAME') && normalized.includes('VARCHAR');
+                                const hasTeacher = normalized.includes('TEACHER') && normalized.includes('VARCHAR');
+                                const hasCredit = normalized.includes('CREDIT') && normalized.includes('INT');
+                                const hasHours = normalized.includes('HOURS') && normalized.includes('INT');
+                                const hasType = normalized.includes('TYPE') && normalized.includes('VARCHAR');
+                                
+                                return hasCNumber && hasCName && hasTeacher && hasCredit && hasHours && hasType;
+                            }, 
+                            message: "必须包含所有6个字段：C_number(CHAR), C_name(VARCHAR), Teacher(VARCHAR), Credit(INT), Hours(INT), Type(VARCHAR)" 
+                        },
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                // 确保不包含PRIMARY KEY
+                                const hasPrimaryKey = normalized.includes('PRIMARY') && normalized.includes('KEY');
+                                return !hasPrimaryKey;
+                            }, 
+                            message: "此步骤不应包含 PRIMARY KEY 约束" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤4: 添加主键约束",
+                    description: "现在使用ALTER TABLE语句为T_Course表添加主键约束，将C_number字段设置为主键。",
+                    hint: "提示：使用ALTER TABLE语句添加PRIMARY KEY约束",
+                    sqlExample: "ALTER TABLE T_Course ADD PRIMARY KEY (C_number);",
+                    correctAnswer: "ALTER TABLE T_Course ADD PRIMARY KEY (C_number);",
+                    highlightFields: [1],
+                    updateConstraints: function() {
+                        // 更新约束显示
+                        const constraintElement = document.getElementById('constraint1');
+                        constraintElement.className = 'constraint-badge constraint-primary constraint-animation';
+                        constraintElement.textContent = 'PRIMARY KEY';
+                        
+                        // 更新约束描述
+                        document.getElementById('constraintDesc1').innerHTML = 
+                            '<strong>主键约束：</strong>C_number 字段作为主键，唯一标识每门课程';
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('ALTER') && 
+                                       normalized.includes('TABLE') &&
+                                       normalized.includes('T_COURSE');
+                            }, 
+                            message: "必须包含 ALTER TABLE 和表名称 T_Course" 
+                        },
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('ADD') && 
+                                       normalized.includes('PRIMARY') &&
+                                       normalized.includes('KEY');
+                            }, 
+                            message: "必须包含 ADD PRIMARY KEY" 
+                        },
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('C_NUMBER');
+                            }, 
+                            message: "必须指定 C_number 字段作为主键" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤5: 查看表结构",
+                    description: "恭喜！T_Course表已成功创建并添加了主键约束。现在可以使用DESCRIBE语句查看表结构确认创建结果。",
+                    hint: "提示：使用DESCRIBE语句查看表结构",
+                    sqlExample: "DESCRIBE T_Course;",
+                    correctAnswer: "DESCRIBE T_Course;",
+                    highlightFields: [1, 2, 3, 4, 5, 6],
+                    updateConstraints: function() {
+                        // 显示DESCRIBE结果
+                        document.getElementById('describeResult').style.display = 'block';
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('DESCRIBE') && 
+                                       normalized.includes('T_COURSE');
+                            }, 
+                            message: "必须包含 DESCRIBE 和表名称 T_Course" 
+                        }
+                    ]
+                }
+            ];
+
+            // DOM元素
+            const stepElements = [
+                document.getElementById('step1'),
+                document.getElementById('step2'),
+                document.getElementById('step3'),
+                document.getElementById('step4'),
+                document.getElementById('step5')
+            ];
+            const stepTitle = document.getElementById('stepTitle');
+            const stepDescription = document.getElementById('stepDescription');
+            const hint = document.getElementById('hint');
+            const sqlExample = document.getElementById('sqlExample');
+            const codeInput = document.getElementById('codeInput');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const validationDetails = document.getElementById('validationDetails');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const validateBtn = document.getElementById('validateBtn');
+            const progress = document.getElementById('progress');
+            const fieldRows = [
+                document.getElementById('field1'),
+                document.getElementById('field2'),
+                document.getElementById('field3'),
+                document.getElementById('field4'),
+                document.getElementById('field5'),
+                document.getElementById('field6')
+            ];
+            const describeResult = document.getElementById('describeResult');
+            
+            // 新增的动画元素
+            const codeValidation = document.getElementById('codeValidation');
+            const typingAnimation = document.getElementById('typingAnimation');
+            const syntaxHighlight = document.getElementById('syntaxHighlight');
+
+            // 当前步骤
+            let currentStep = 0;
+            let typingTimer = null;
+            let stepCompleted = false;
+
+            // 更新界面
+            function updateUI() {
+                // 更新步骤指示器
+                stepElements.forEach((step, index) => {
+                    step.classList.remove('active', 'completed');
+                    if (index === currentStep) {
+                        step.classList.add('active');
+                    } else if (index < currentStep) {
+                        step.classList.add('completed');
+                    }
+                });
+
+                // 更新内容
+                stepTitle.textContent = steps[currentStep].title;
+                stepDescription.textContent = steps[currentStep].description;
+                hint.textContent = steps[currentStep].hint;
+                sqlExample.textContent = steps[currentStep].sqlExample;
+                codeInput.value = '';
+                
+                // 更新进度条
+                progress.style.width = `${(currentStep / (steps.length - 1)) * 100}%`;
+                
+                // 更新按钮状态
+                prevBtn.disabled = currentStep === 0;
+                nextBtn.disabled = !stepCompleted || currentStep === steps.length - 1;
+                
+                // 清除消息
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
+                validationDetails.style.display = 'none';
+                
+                // 隐藏DESCRIBE结果（除非是步骤5且已完成）
+                if (currentStep !== 4 || !stepCompleted) {
+                    describeResult.style.display = 'none';
+                }
+                
+                // 高亮字段
+                fieldRows.forEach((row, index) => {
+                    row.classList.remove('field-highlight');
+                    if (steps[currentStep].highlightFields.includes(index + 1)) {
+                        row.classList.add('field-highlight');
+                    }
+                });
+
+                // 执行约束更新函数（如果存在）
+                if (steps[currentStep].updateConstraints && stepCompleted) {
+                    steps[currentStep].updateConstraints();
+                }
+                
+                // 重置动画状态
+                resetAnimation();
+                
+                // 重置完成状态
+                stepCompleted = false;
+            }
+
+            // 重置动画状态
+            function resetAnimation() {
+                codeValidation.classList.remove('active', 'validation-success', 'validation-error');
+                typingAnimation.classList.remove('active');
+                syntaxHighlight.classList.remove('syntax-correct', 'syntax-error');
+            }
+
+            // 显示验证动画
+            function showValidationAnimation(isSuccess) {
+                codeValidation.classList.remove('validation-success', 'validation-error');
+                
+                if (isSuccess) {
+                    codeValidation.classList.add('validation-success');
+                } else {
+                    codeValidation.classList.add('validation-error');
+                }
+                
+                codeValidation.classList.add('active');
+                
+                // 3秒后移除动画
+                setTimeout(() => {
+                    codeValidation.classList.remove('active');
+                }, 3000);
+            }
+
+            // 显示输入动画
+            function showTypingAnimation() {
+                typingAnimation.classList.add('active');
+                
+                // 清除之前的计时器
+                if (typingTimer) {
+                    clearTimeout(typingTimer);
+                }
+                
+                // 1秒后隐藏动画
+                typingTimer = setTimeout(() => {
+                    typingAnimation.classList.remove('active');
+                }, 1000);
+            }
+
+            // 显示语法高亮
+            function showSyntaxHighlight(isCorrect) {
+                syntaxHighlight.classList.remove('syntax-correct', 'syntax-error');
+                
+                if (isCorrect) {
+                    syntaxHighlight.classList.add('syntax-correct');
+                } else {
+                    syntaxHighlight.classList.add('syntax-error');
+                }
+            }
+
+            // 验证答案
+            function validateAnswer() {
+                const userAnswer = codeInput.value.trim();
+                if (!userAnswer) {
+                    errorMessage.style.display = 'block';
+                    successMessage.style.display = 'none';
+                    validationDetails.style.display = 'none';
+                    showValidationAnimation(false);
+                    stepCompleted = false;
+                    nextBtn.disabled = true;
+                    return false;
+                }
+
+                // 详细的验证逻辑
+                let isValid = true;
+                let errorMessages = [];
+                
+                // 检查每个验证规则
+                if (steps[currentStep].validationRules) {
+                    steps[currentStep].validationRules.forEach(rule => {
+                        if (!rule.check(userAnswer)) {
+                            isValid = false;
+                            errorMessages.push(rule.message);
+                        }
+                    });
+                }
+                
+                if (isValid) {
+                    successMessage.style.display = 'block';
+                    errorMessage.style.display = 'none';
+                    validationDetails.style.display = 'none';
+                    showValidationAnimation(true);
+                    
+                    // 标记步骤完成
+                    stepCompleted = true;
+                    nextBtn.disabled = false;
+                    
+                    return true;
+                } else {
+                    successMessage.style.display = 'none';
+                    errorMessage.style.display = 'block';
+                    validationDetails.style.display = 'block';
+                    validationDetails.innerHTML = `
+                        <strong>验证失败，请检查以下问题：</strong>
+                        <ul>
+                            ${errorMessages.map(msg => `<li>${msg}</li>`).join('')}
+                        </ul>
+                    `;
+                    showValidationAnimation(false);
+                    
+                    // 标记步骤未完成
+                    stepCompleted = false;
+                    nextBtn.disabled = true;
+                    
+                    return false;
+                }
+            }
+
+            // 实时语法检查
+            function checkSyntax() {
+                const userAnswer = codeInput.value.trim();
+                if (!userAnswer) {
+                    syntaxHighlight.classList.remove('syntax-correct', 'syntax-error');
+                    return;
+                }
+
+                // 简化的语法检查逻辑
+                let isSyntaxCorrect = false;
+                
+                if (steps[currentStep].validationRules) {
+                    isSyntaxCorrect = steps[currentStep].validationRules.every(rule => rule.check(userAnswer));
+                }
+                
+                showSyntaxHighlight(isSyntaxCorrect);
+            }
+
+            // 事件监听
+            nextBtn.addEventListener('click', function() {
+                if (currentStep < steps.length - 1 && stepCompleted) {
+                    currentStep++;
+                    stepCompleted = false;
+                    updateUI();
+                }
+            });
+
+            prevBtn.addEventListener('click', function() {
+                if (currentStep > 0) {
+                    currentStep--;
+                    stepCompleted = false;
+                    updateUI();
+                }
+            });
+
+            resetBtn.addEventListener('click', function() {
+                currentStep = 0;
+                stepCompleted = false;
+                updateUI();
+                
+                // 重置约束显示
+                const constraintElement = document.getElementById('constraint1');
+                constraintElement.className = 'constraint-badge constraint-pending';
+                constraintElement.textContent = '待添加';
+                
+                // 重置约束描述
+                document.getElementById('constraintDesc1').innerHTML = 
+                    '<strong>主键约束：</strong>C_number 字段作为主键，唯一标识每门课程';
+            });
+
+            validateBtn.addEventListener('click', function() {
+                validateAnswer();
+            });
+
+            codeInput.addEventListener('input', function() {
+                showTypingAnimation();
+                checkSyntax();
+                
+                // 输入时重置完成状态
+                stepCompleted = false;
+                nextBtn.disabled = true;
+            });
+
+            codeInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    validateAnswer();
+                }
+            });
+
+            // 初始化
+            updateUI();
+        });
+    </script>
+</body>
+</html>
