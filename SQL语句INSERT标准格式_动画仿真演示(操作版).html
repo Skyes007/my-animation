@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL插入语句动画演示</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <style>
+        /* 样式基于原有文件，添加了表格相关样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a2a6c, #3498db, #87CEEB);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #1a73e8, #0d47a1);
+            color: white;
+            padding: clamp(12px, 2vw, 20px);
+            text-align: center;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .header h1 {
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .left-panel {
+            flex: 1;
+            padding: clamp(15px, 2vw, 25px);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding: clamp(15px, 2vw, 25px);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e0e0e0;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: #1a73e8;
+            color: white;
+            box-shadow: 0 0 10px rgba(26, 115, 232, 0.7);
+            animation: pulse 1.5s infinite;
+        }
+
+        .step.completed {
+            background: #0f9d58;
+            color: white;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #1a73e8, #0d47a1);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .step-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .step-title {
+            font-size: clamp(1.2rem, 2vw, 1.6rem);
+            margin-bottom: 15px;
+            color: #1a73e8;
+            font-weight: 600;
+        }
+
+        .step-description {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            color: #555;
+        }
+
+        .code-editor {
+            background: #282c34;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #abb2bf;
+            font-size: 0.9rem;
+        }
+
+        .code-area {
+            flex: 1;
+            background: #1e2227;
+            border-radius: 5px;
+            padding: 15px;
+            overflow: auto;
+            position: relative;
+        }
+
+        .code-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #abb2bf;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            position: relative;
+            z-index: 2;
+        }
+
+        .code-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .hint {
+            background: #e3f2fd;
+            border-left: 4px solid #1a73e8;
+            padding: 10px 15px;
+            margin-top: 10px;
+            border-radius: 0 5px 5px 0;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+
+        .sql-example {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 12px;
+            margin-top: 10px;
+            border-left: 4px solid #1a73e8;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+
+        .animation-area {
+            flex: 1;
+            background: #f5f9ff;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e1f5fe;
+            animation: glow 2s infinite alternate;
+        }
+
+        .animation-title {
+            text-align: center;
+            font-size: clamp(1.2rem, 2vw, 1.6rem);
+            margin-bottom: 15px;
+            color: #0d47a1;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-prev {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-next {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-validate {
+            background: #4caf50;
+            color: white;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            background: #e0e0e0;
+            color: #9e9e9e;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(26, 115, 232, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05); }
+            100% { box-shadow: 0 5px 20px rgba(33, 150, 243, 0.3); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 新增的表格样式 */
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            margin-top: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            background: white;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .data-table th {
+            background: #1a73e8;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table tr:nth-child(even) {
+            background: #f5f9ff;
+        }
+
+        .data-table tr:hover {
+            background: #e3f2fd;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .table-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0d47a1;
+        }
+
+        .table-stats {
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .highlight-row {
+            animation: highlight 2s ease;
+        }
+
+        @keyframes highlight {
+            0% { background-color: #fff9c4; }
+            100% { background-color: transparent; }
+        }
+
+        .code-validation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .code-validation.active {
+            opacity: 1;
+        }
+
+        .validation-success {
+            background: linear-gradient(90deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.2));
+            animation: successGlow 1.5s ease;
+        }
+
+        .validation-error {
+            background: linear-gradient(90deg, rgba(244, 67, 54, 0.1), rgba(244, 67, 54, 0.2));
+            animation: errorShake 0.5s ease;
+        }
+
+        @keyframes successGlow {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            50% { box-shadow: 0 0 20px 10px rgba(76, 175, 80, 0.3); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .typing-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: typing 2s infinite;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .typing-animation.active {
+            opacity: 1;
+        }
+
+        @keyframes typing {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .syntax-highlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .validation-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff3e0;
+            border-radius: 5px;
+            border-left: 4px solid #ff9800;
+            font-size: 0.85rem;
+            color: #e65100;
+        }
+
+        .validation-details ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .validation-details li {
+            margin-bottom: 3px;
+        }
+
+        /* 标准语句格式样式 */
+        .syntax-guide {
+            background: #f0f7ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #bbdefb;
+        }
+
+        .syntax-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1565c0;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .syntax-structure {
+            background: #e3f2fd;
+            border-radius: 5px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #0d47a1;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .syntax-keyword {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+
+        .syntax-parameter {
+            color: #388e3c;
+            font-weight: bold;
+        }
+
+        .syntax-optional {
+            color: #7b1fa2;
+            font-style: italic;
+        }
+
+        .syntax-explanation {
+            font-size: 0.85rem;
+            color: #546e7a;
+            line-height: 1.5;
+        }
+
+        .syntax-explanation ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .syntax-explanation li {
+            margin-bottom: 3px;
+        }
+
+        .table-structure {
+            background: #e8f5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #4caf50;
+        }
+
+        .table-structure-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .constraint-info {
+            font-size: 0.8rem;
+            color: #555;
+            margin-top: 5px;
+        }
+
+        .constraint-primary {
+            color: #d32f2f;
+        }
+
+        .constraint-default {
+            color: #7b1fa2;
+        }
+
+        .constraint-auto {
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MySQL插入语句动画演示</h1>
+            <p>INSERT语句类型与效果 - 交互式学习体验</p>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+        
+        <div class="content">
+            <div class="left-panel">
+                <div class="step-indicator">
+                    <div class="step active" id="step1">1</div>
+                    <div class="step" id="step2">2</div>
+                    <div class="step" id="step3">3</div>
+                    <div class="step" id="step4">4</div>
+                </div>
+                
+                <div class="step-content">
+                    <h2 class="step-title" id="stepTitle">步骤1: 完整插入</h2>
+                    <p class="step-description" id="stepDescription">完整插入语句需要指定所有列的值，包括自增列。注意：自增列的值如果与已有值冲突，插入会失败。</p>
+                    
+                    <div class="code-editor">
+                        <div class="code-header">
+                            <span>SQL 编辑器</span>
+                            <span>MySQL</span>
+                        </div>
+                        <div class="code-area">
+                            <textarea class="code-input" id="codeInput" placeholder="在此输入SQL语句..."></textarea>
+                            <div class="code-background">
+                                <div class="code-validation" id="codeValidation"></div>
+                                <div class="typing-animation" id="typingAnimation"></div>
+                                <div class="syntax-highlight" id="syntaxHighlight"></div>
+                            </div>
+                        </div>
+                        <div class="hint" id="hint">提示：使用INSERT INTO语句插入数据，注意自增列的值不能重复</div>
+                        <div class="sql-example" id="sqlExample">示例：INSERT INTO students(student_id, student_name, sex, student_age, birthday) VALUES(1, '张三', '男', 19, '2002-12-1');</div>
+                    </div>
+                    
+                    <div class="success-message" id="successMessage">✓ 正确！SQL语句执行成功。</div>
+                    <div class="error-message" id="errorMessage">✗ 错误！请检查SQL语句是否正确。</div>
+                    <div class="validation-details" id="validationDetails" style="display: none;"></div>
+                    
+                    <div class="controls">
+                        <button class="btn btn-prev" id="prevBtn" disabled>上一步</button>
+                        <button class="btn btn-validate" id="validateBtn">验证SQL</button>
+                        <button class="btn btn-next" id="nextBtn" disabled>下一步</button>
+                        <button class="btn btn-reset" id="resetBtn">重置</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <!-- 标准语句格式区域 -->
+                <div class="syntax-guide">
+                    <div class="syntax-title">INSERT INTO 标准语句格式</div>
+                    <div class="syntax-structure">
+                        <span class="syntax-keyword">INSERT INTO</span> <span class="syntax-parameter">table_name</span><br>
+                        (<span class="syntax-parameter">column1</span>, <span class="syntax-parameter">column2</span>, ...)<br>
+                        <span class="syntax-keyword">VALUES</span><br>
+                        (<span class="syntax-parameter">value1</span>, <span class="syntax-parameter">value2</span>, ...);
+                    </div>
+                    <div class="syntax-explanation">
+                        <strong>参数说明：</strong>
+                        <ul>
+                            <li><span class="syntax-keyword">INSERT INTO</span> - 插入数据的关键字</li>
+                            <li><span class="syntax-parameter">table_name</span> - 表名称（此处为students）</li>
+                            <li><span class="syntax-parameter">column1, column2, ...</span> - 要插入数据的列名</li>
+                            <li><span class="syntax-keyword">VALUES</span> - 指定要插入的值</li>
+                            <li><span class="syntax-parameter">value1, value2, ...</span> - 对应列的值</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 表结构信息 -->
+                <div class="table-structure">
+                    <div class="table-structure-title">students表结构</div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        <tr>
+                            <th style="padding: 8px; text-align: left; background: #4caf50; color: white;">列名</th>
+                            <th style="padding: 8px; text-align: left; background: #4caf50; color: white;">数据类型</th>
+                            <th style="padding: 8px; text-align: left; background: #4caf50; color: white;">约束</th>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">student_id</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">INT</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">
+                                <span class="constraint-primary">PRIMARY KEY</span>, 
+                                <span class="constraint-auto">AUTO_INCREMENT</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">student_name</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">VARCHAR(50)</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">NOT NULL</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">sex</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">CHAR(2)</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">NOT NULL</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">student_age</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">INT</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">
+                                <span class="constraint-default">DEFAULT 18</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">birthday</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">DATE</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">NULL</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="animation-area">
+                    <h3 class="animation-title" id="animationTitle">数据插入效果</h3>
+                    
+                    <div class="table-header">
+                        <div class="table-title">students表数据</div>
+                        <div class="table-stats" id="tableStats">0 行数据</div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table" id="dataTable">
+                            <thead>
+                                <tr>
+                                    <th>student_id</th>
+                                    <th>student_name</th>
+                                    <th>sex</th>
+                                    <th>student_age</th>
+                                    <th>birthday</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- 表格数据将通过JavaScript动态添加 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 步骤数据
+            const steps = [
+                {
+                    title: "步骤1: 完整插入",
+                    description: "完整插入语句需要指定所有列的值，包括自增列。注意：自增列的值如果与已有值冲突，插入会失败。",
+                    hint: "提示：使用INSERT INTO语句插入数据，注意自增列的值不能重复",
+                    sqlExample: "INSERT INTO students(student_id, student_name, sex, student_age, birthday) VALUES(1, '张三', '男', 19, '2002-12-1');",
+                    correctAnswer: "INSERT INTO students(student_id, student_name, sex, student_age, birthday) VALUES(1, '张三', '男', 19, '2002-12-1');",
+                    updateAnimation: function() {
+                        // 添加第一行数据
+                        addTableRow(1, '张三', '男', 19, '2002-12-1');
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('INSERT') && 
+                                       normalized.includes('INTO') &&
+                                       normalized.includes('STUDENTS') &&
+                                       normalized.includes('VALUES') &&
+                                       normalized.includes('1') &&
+                                       normalized.includes('张三') &&
+                                       normalized.includes('男') &&
+                                       normalized.includes('19') &&
+                                       normalized.includes('2002-12-1');
+                            }, 
+                            message: "必须包含 INSERT INTO students 和 VALUES(1, '张三', '男', 19, '2002-12-1')" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤2: 省略列名插入",
+                    description: "如果为所有列提供值，可以省略列名部分。但必须确保值的顺序与表结构中的列顺序完全一致。",
+                    hint: "提示：使用INSERT INTO table_name VALUES(...)格式",
+                    sqlExample: "INSERT INTO students VALUES(2, '李四', '男', 20, '2001-12-8');",
+                    correctAnswer: "INSERT INTO students VALUES(2, '李四', '男', 20, '2001-12-8');",
+                    updateAnimation: function() {
+                        // 添加第二行数据
+                        addTableRow(2, '李四', '男', 20, '2001-12-8');
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('INSERT') && 
+                                       normalized.includes('INTO') &&
+                                       normalized.includes('STUDENTS') &&
+                                       normalized.includes('VALUES') &&
+                                       normalized.includes('2') &&
+                                       normalized.includes('李四') &&
+                                       normalized.includes('男') &&
+                                       normalized.includes('20') &&
+                                       normalized.includes('2001-12-8');
+                            }, 
+                            message: "必须包含 INSERT INTO students VALUES(2, '李四', '男', 20, '2001-12-8')" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤3: 部分插入",
+                    description: "可以只插入部分列的值，未指定的列将使用默认值或NULL。注意：非空且无默认值的列必须指定值。",
+                    hint: "提示：只指定部分列名和对应的值",
+                    sqlExample: "INSERT INTO students(student_name, sex, birthday) VALUES('王五', '女', '1990-12-1');",
+                    correctAnswer: "INSERT INTO students(student_name, sex, birthday) VALUES('王五', '女', '1990-12-1');",
+                    updateAnimation: function() {
+                        // 添加第三行数据（使用自增ID和默认年龄）
+                        addTableRow(3, '王五', '女', 18, '1990-12-1');
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('INSERT') && 
+                                       normalized.includes('INTO') &&
+                                       normalized.includes('STUDENTS') &&
+                                       normalized.includes('VALUES') &&
+                                       normalized.includes('王五') &&
+                                       normalized.includes('女') &&
+                                       normalized.includes('1990-12-1') &&
+                                       !normalized.includes('STUDENT_ID') &&
+                                       !normalized.includes('STUDENT_AGE');
+                            }, 
+                            message: "必须包含 INSERT INTO students(student_name, sex, birthday) VALUES('王五', '女', '1990-12-1')" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤4: 多行插入",
+                    description: "使用单个INSERT语句可以插入多行数据，提高效率。每行数据用逗号分隔。",
+                    hint: "提示：使用INSERT INTO ... VALUES (...), (...), (...);格式",
+                    sqlExample: "INSERT INTO students(student_id, student_name, sex, student_age, birthday) VALUES (10, '陈一', '男', 18, '2003-11-1'), (11, '陈二', '男', 19, '2002-12-1'), (12, '陈三', '男', 20, '2001-10-1');",
+                    correctAnswer: "INSERT INTO students(student_id, student_name, sex, student_age, birthday) VALUES (10, '陈一', '男', 18, '2003-11-1'), (11, '陈二', '男', 19, '2002-12-1'), (12, '陈三', '男', 20, '2001-10-1');",
+                    updateAnimation: function() {
+                        // 添加多行数据
+                        addTableRow(10, '陈一', '男', 18, '2003-11-1');
+                        addTableRow(11, '陈二', '男', 19, '2002-12-1');
+                        addTableRow(12, '陈三', '男', 20, '2001-10-1');
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('INSERT') && 
+                                       normalized.includes('INTO') &&
+                                       normalized.includes('STUDENTS') &&
+                                       normalized.includes('VALUES') &&
+                                       normalized.includes('陈一') &&
+                                       normalized.includes('陈二') &&
+                                       normalized.includes('陈三');
+                            }, 
+                            message: "必须包含 INSERT INTO students ... VALUES 并插入陈一、陈二、陈三三行数据" 
+                        }
+                    ]
+                }
+            ];
+
+            // DOM元素
+            const stepElements = [
+                document.getElementById('step1'),
+                document.getElementById('step2'),
+                document.getElementById('step3'),
+                document.getElementById('step4')
+            ];
+            const stepTitle = document.getElementById('stepTitle');
+            const stepDescription = document.getElementById('stepDescription');
+            const hint = document.getElementById('hint');
+            const sqlExample = document.getElementById('sqlExample');
+            const codeInput = document.getElementById('codeInput');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const validationDetails = document.getElementById('validationDetails');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const validateBtn = document.getElementById('validateBtn');
+            const progress = document.getElementById('progress');
+            const animationTitle = document.getElementById('animationTitle');
+            const tableBody = document.getElementById('tableBody');
+            const tableStats = document.getElementById('tableStats');
+            
+            // 新增的动画元素
+            const codeValidation = document.getElementById('codeValidation');
+            const typingAnimation = document.getElementById('typingAnimation');
+            const syntaxHighlight = document.getElementById('syntaxHighlight');
+
+            // 当前步骤
+            let currentStep = 0;
+            let typingTimer = null;
+            let stepCompleted = false;
+            let tableData = [];
+
+            // 添加表格行
+            function addTableRow(id, name, sex, age, birthday) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${id}</td>
+                    <td>${name}</td>
+                    <td>${sex}</td>
+                    <td>${age}</td>
+                    <td>${birthday}</td>
+                `;
+                
+                // 添加高亮动画
+                row.classList.add('highlight-row');
+                
+                tableBody.appendChild(row);
+                
+                // 更新表格统计数据
+                tableData.push({id, name, sex, age, birthday});
+                tableStats.textContent = `${tableData.length} 行数据`;
+                
+                // 移除高亮动画
+                setTimeout(() => {
+                    row.classList.remove('highlight-row');
+                }, 2000);
+            }
+
+            // 清空表格
+            function clearTable() {
+                tableBody.innerHTML = '';
+                tableData = [];
+                tableStats.textContent = '0 行数据';
+            }
+
+            // 更新界面
+            function updateUI() {
+                // 更新步骤指示器
+                stepElements.forEach((step, index) => {
+                    step.classList.remove('active', 'completed');
+                    if (index === currentStep) {
+                        step.classList.add('active');
+                    } else if (index < currentStep) {
+                        step.classList.add('completed');
+                    }
+                });
+
+                // 更新内容
+                stepTitle.textContent = steps[currentStep].title;
+                stepDescription.textContent = steps[currentStep].description;
+                hint.textContent = steps[currentStep].hint;
+                sqlExample.textContent = steps[currentStep].sqlExample;
+                animationTitle.textContent = steps[currentStep].title;
+                codeInput.value = '';
+                
+                // 更新进度条
+                progress.style.width = `${(currentStep / (steps.length - 1)) * 100}%`;
+                
+                // 更新按钮状态
+                prevBtn.disabled = currentStep === 0;
+                nextBtn.disabled = !stepCompleted;
+                
+                // 隐藏消息
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
+                validationDetails.style.display = 'none';
+                
+                // 重置验证状态
+                codeValidation.className = 'code-validation';
+                stepCompleted = false;
+                
+                // 清空表格并重新添加已完成步骤的数据
+                clearTable();
+                for (let i = 0; i <= currentStep; i++) {
+                    if (i < currentStep) {
+                        steps[i].updateAnimation();
+                    }
+                }
+            }
+
+            // 验证SQL语句
+            function validateSQL() {
+                const sql = codeInput.value.trim();
+                const currentStepData = steps[currentStep];
+                
+                // 隐藏之前的消息
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
+                validationDetails.style.display = 'none';
+                
+                // 重置验证状态
+                codeValidation.className = 'code-validation';
+                
+                // 检查SQL语句
+                let isValid = true;
+                let errorMessages = [];
+                
+                for (const rule of currentStepData.validationRules) {
+                    if (!rule.check(sql)) {
+                        isValid = false;
+                        errorMessages.push(rule.message);
+                    }
+                }
+                
+                if (isValid) {
+                    // 验证成功
+                    codeValidation.classList.add('active', 'validation-success');
+                    successMessage.style.display = 'block';
+                    stepCompleted = true;
+                    nextBtn.disabled = false;
+                    
+                    // 执行动画
+                    setTimeout(() => {
+                        currentStepData.updateAnimation();
+                    }, 500);
+                } else {
+                    // 验证失败
+                    codeValidation.classList.add('active', 'validation-error');
+                    errorMessage.style.display = 'block';
+                    validationDetails.innerHTML = `
+                        <strong>错误详情：</strong>
+                        <ul>
+                            ${errorMessages.map(msg => `<li>${msg}</li>`).join('')}
+                        </ul>
+                    `;
+                    validationDetails.style.display = 'block';
+                }
+            }
+
+            // 下一步
+            function nextStep() {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    updateUI();
+                }
+            }
+
+            // 上一步
+            function prevStep() {
+                if (currentStep > 0) {
+                    currentStep--;
+                    updateUI();
+                }
+            }
+
+            // 重置
+            function reset() {
+                currentStep = 0;
+                stepCompleted = false;
+                updateUI();
+            }
+
+            // 输入时的打字动画
+            codeInput.addEventListener('input', function() {
+                // 显示打字动画
+                typingAnimation.classList.add('active');
+                
+                // 清除之前的计时器
+                if (typingTimer) {
+                    clearTimeout(typingTimer);
+                }
+                
+                // 设置新的计时器
+                typingTimer = setTimeout(() => {
+                    typingAnimation.classList.remove('active');
+                }, 1000);
+            });
+
+            // 绑定按钮事件
+            validateBtn.addEventListener('click', validateSQL);
+            nextBtn.addEventListener('click', nextStep);
+            prevBtn.addEventListener('click', prevStep);
+            resetBtn.addEventListener('click', reset);
+
+            // 初始化
+            updateUI();
+        });
+    </script>
+</body>
+</html>

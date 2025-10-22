@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL DELETE 语句动画演示 - 学生表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2a4d8e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            padding: clamp(12px, 3vw, 20px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 2px solid #ff5722;
+        }
+
+        .header h1 {
+            font-size: clamp(1.3rem, 4vw, 2.2rem);
+            margin-bottom: 8px;
+            color: #ff5722;
+            text-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
+        }
+
+        .header p {
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .code-section {
+            flex: 1;
+            padding: clamp(8px, 1.5vw, 15px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 20, 40, 0.8);
+            border-right: 1px solid rgba(255, 87, 34, 0.3);
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .code-section {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 87, 34, 0.3);
+            }
+        }
+
+        /* 标准格式样式 - 占左侧40%高度 */
+        .syntax-format {
+            background: linear-gradient(135deg, #0d1b2a, #1e3a5f);
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            margin-bottom: 12px;
+            border: 2px solid #ff5722;
+            box-shadow: 
+                0 0 15px rgba(255, 87, 34, 0.4),
+                inset 0 0 15px rgba(255, 87, 34, 0.1);
+            position: relative;
+            overflow: hidden;
+            flex: 0 0 40%; /* 占左侧40%高度 */
+            overflow-y: auto; /* 允许垂直滚动 */
+        }
+
+        .syntax-format::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #ff5722, #ff7043, #ff5722);
+            animation: shimmer 3s infinite;
+        }
+
+        .syntax-title {
+            color: #ff5722;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(255, 87, 34, 0.5);
+        }
+
+        .syntax-line {
+            margin-bottom: 4px;
+            padding: 6px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            border-radius: 6px;
+            background: rgba(255, 87, 34, 0.15);
+            border: 1px solid rgba(255, 87, 34, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            line-height: 1.3;
+        }
+
+        .syntax-line:hover {
+            background: rgba(255, 87, 34, 0.25);
+            transform: translateX(3px);
+        }
+
+        .syntax-comment {
+            color: #ffccbc;
+            font-style: italic;
+            margin-left: 8px;
+            font-size: clamp(0.7rem, 1.3vw, 0.8rem);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .required {
+            color: #ff5722;
+            font-weight: bold;
+        }
+
+        .optional {
+            color: #ffb74d;
+        }
+
+        .code-editor {
+            flex: 1; /* 占左侧60%高度 */
+            background: #0d1b2a;
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            overflow: auto; /* 允许滚动 */
+            border: 1px solid #ff5722;
+            box-shadow: 0 0 12px rgba(255, 87, 34, 0.3);
+        }
+
+        .code-line {
+            margin-bottom: 6px;
+            padding: 6px 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            background: rgba(255, 255, 255, 0.05);
+            line-height: 1.3;
+        }
+
+        .code-line.active {
+            background: rgba(255, 87, 34, 0.2);
+            border-left: 3px solid #ff5722;
+            box-shadow: 0 0 12px rgba(255, 87, 34, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .code-line.completed {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 3px solid #4caf50;
+        }
+
+        .animation-section {
+            flex: 1;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 30, 60, 0.6);
+        }
+
+        .animation-section h2 {
+            margin-bottom: 12px;
+            color: #ff5722;
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+        }
+
+        .animation-container {
+            flex: 1;
+            background: rgba(13, 27, 42, 0.7);
+            border-radius: 10px;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ff5722;
+            box-shadow: 0 0 15px rgba(255, 87, 34, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .step-explanation {
+            margin-top: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(0, 30, 60, 0.9), rgba(0, 50, 100, 0.9));
+            border-radius: 8px;
+            border-left: 4px solid #ff5722;
+            width: 95%;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: clamp(12px, 2vw, 20px);
+            gap: clamp(8px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-top: 1px solid rgba(255, 87, 34, 0.3);
+        }
+
+        .btn {
+            padding: clamp(8px, 2vw, 12px) clamp(15px, 3vw, 25px);
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #d84315, #ff5722);
+            color: white;
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #ff5722, #ff7043);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #546e7a;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-container {
+            padding: clamp(10px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 1px solid rgba(255, 87, 34, 0.3);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #ff5722, #ff7043, #ff5722);
+            background-size: 200% 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+            animation: progressShimmer 2s infinite;
+        }
+
+        .step-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+        }
+
+        .step-indicator {
+            padding: 6px 12px;
+            border-radius: 15px;
+            background: rgba(255, 87, 34, 0.2);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 87, 34, 0.3);
+        }
+
+        .step-indicator.active {
+            background: #ff5722;
+            color: #0d1b2a;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(255, 87, 34, 0.7);
+            transform: scale(1.1);
+        }
+
+        /* 动画关键帧 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes progressShimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px rgba(255, 87, 34, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(255, 87, 34, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(255, 87, 34, 0.5); }
+        }
+
+        @keyframes deletion {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); background-color: rgba(255, 87, 34, 0.5); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
+            color: #4caf50;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.3));
+            color: #f44336;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            box-shadow: 0 0 8px rgba(244, 67, 54, 0.3);
+        }
+
+        .warning-message {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.2), rgba(255, 152, 0, 0.3));
+            color: #ff9800;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(255, 152, 0, 0.5);
+            box-shadow: 0 0 8px rgba(255, 152, 0, 0.3);
+        }
+
+        .format-key {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 6px;
+            text-align: center;
+            line-height: 14px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .required-key {
+            background: #ff5722;
+            color: white;
+        }
+
+        .optional-key {
+            background: #ffb74d;
+            color: white;
+        }
+        
+        /* 自适应数据表格样式 */
+        .data-table-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+            padding: 5px;
+        }
+        
+        .data-table {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ff5722, #ff7043);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(255, 87, 34, 0.7);
+            overflow: hidden;
+            transition: all 0.5s ease;
+            min-height: 200px; /* 确保表格最小高度 */
+        }
+        
+        .table-header {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.5vw, 1rem);
+            flex-shrink: 0;
+        }
+        
+        .table-body {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .table-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 10px;
+            font-size: clamp(0.7rem, 1.3vw, 0.85rem);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+            transition: all 0.5s ease;
+        }
+        
+        .data-cell {
+            flex: 1;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 4px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .data-cell:last-child {
+            border-right: none;
+        }
+        
+        .row-to-delete {
+            background-color: rgba(255, 87, 34, 0.3);
+            animation: deletionPulse 1.5s infinite;
+        }
+        
+        @keyframes deletionPulse {
+            0% { background-color: rgba(255, 87, 34, 0.3); }
+            50% { background-color: rgba(255, 87, 34, 0.6); }
+            100% { background-color: rgba(255, 87, 34, 0.3); }
+        }
+        
+        .deleted-row {
+            animation: deletion 1s forwards;
+        }
+        
+        .highlighted-row {
+            background-color: rgba(255, 193, 7, 0.3);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+        }
+        
+        .condition-highlight {
+            background-color: rgba(255, 193, 7, 0.5);
+            border-radius: 3px;
+            padding: 0 4px;
+        }
+        
+        /* 小屏幕适配 */
+        @media (max-width: 768px) {
+            .table-row {
+                padding: 4px 6px;
+                font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+            }
+            
+            .data-cell {
+                padding: 0 2px;
+            }
+        }
+        
+        /* 超小屏幕适配 */
+        @media (max-width: 480px) {
+            .table-row {
+                padding: 3px 4px;
+                font-size: clamp(0.5rem, 1vw, 0.65rem);
+            }
+            
+            .data-cell {
+                padding: 0 1px;
+            }
+        }
+        
+        .constraint {
+            font-size: 0.7em;
+            color: #ffcc80;
+            margin-left: 5px;
+            font-style: italic;
+        }
+        
+        .data-type {
+            font-size: 0.7em;
+            color: #a5d6a7;
+            margin-left: 5px;
+        }
+        
+        .table-structure-row {
+            display: flex;
+            width: 100%;
+        }
+        
+        .structure-cell {
+            flex: 1;
+            text-align: center;
+            padding: 6px 4px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: clamp(0.7rem, 1.3vw, 0.85rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .structure-cell:last-child {
+            border-right: none;
+        }
+        
+        .structure-header {
+            background: rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+        }
+        
+        /* 空表格样式 */
+        .empty-table {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SQL DELETE 语句动画演示 - 学生表</h1>
+            <p>通过分步动画演示DELETE语句的完整语法和执行过程，包含WHERE子句、多条件删除等</p>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="step-indicators" id="step-indicators">
+                <!-- 步骤指示器将通过JS动态生成 -->
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="code-section">
+                <!-- 紧凑的标准格式 -->
+                <div class="syntax-format">
+                    <div class="syntax-title">📋 DELETE 语句标准格式</div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">DELETE FROM table_name</span>
+                        <span class="syntax-comment"># 指定要删除数据的表</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">WHERE condition;</span>
+                        <span class="syntax-comment"># 指定删除条件（可选）</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="syntax-comment"># 常用条件运算符：=, <>, >, <, >=, <=, AND, OR, IN, LIKE</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="syntax-comment"># 示例：</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="syntax-comment">DELETE FROM students WHERE id = 1;</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="syntax-comment">DELETE FROM students WHERE age > 20;</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="syntax-comment">DELETE FROM students WHERE name LIKE '张%';</span>
+                    </div>
+                </div>
+                
+                <div class="code-editor" id="code-editor">
+                    <!-- 代码行将通过JS动态生成 -->
+                </div>
+            </div>
+            
+            <div class="animation-section">
+                <h2>动画演示</h2>
+                <div class="animation-container">
+                    <div class="table-animation" id="table-animation">
+                        <!-- 动画元素将通过JS动态生成 -->
+                    </div>
+                    <div class="step-explanation" id="step-explanation">
+                        点击"开始演示"按钮查看DELETE语句的完整执行过程
+                    </div>
+                    <div class="success-message" id="success-message"></div>
+                    <div class="error-message" id="error-message"></div>
+                    <div class="warning-message" id="warning-message"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="prev-btn" disabled>上一步</button>
+            <button class="btn" id="play-btn">开始演示</button>
+            <button class="btn" id="pause-btn" disabled>暂停</button>
+            <button class="btn" id="next-btn" disabled>下一步</button>
+            <button class="btn" id="reset-btn">重置</button>
+        </div>
+    </div>
+
+    <script>
+        // 表结构定义 - 包含数据类型和约束
+        const tableStructure = [
+            { 
+                name: 'student_id', 
+                type: 'INT', 
+                constraints: ['PRIMARY KEY', 'AUTO_INCREMENT'],
+                nullable: false
+            },
+            { 
+                name: 'student_name', 
+                type: 'VARCHAR(50)', 
+                constraints: ['NOT NULL'],
+                nullable: false
+            },
+            { 
+                name: 'sex', 
+                type: 'CHAR(2)', 
+                constraints: ['CHECK(sex IN ("男", "女"))'],
+                nullable: true
+            },
+            { 
+                name: 'student_age', 
+                type: 'INT', 
+                constraints: ['DEFAULT 18'],
+                nullable: true
+            },
+            { 
+                name: 'birthday', 
+                type: 'DATE', 
+                constraints: [],
+                nullable: true
+            }
+        ];
+
+        // 初始数据
+        const initialData = [
+            { student_id: 1, student_name: '张三', sex: '男', student_age: 19, birthday: '2002-12-1' },
+            { student_id: 2, student_name: '李四', sex: '男', student_age: 20, birthday: '2001-12-8' },
+            { student_id: 3, student_name: '王五', sex: '女', student_age: 18, birthday: '1990-12-1' },
+            { student_id: 4, student_name: '赵六', sex: '男', student_age: 22, birthday: '1999-05-15' },
+            { student_id: 5, student_name: '钱七', sex: '男', student_age: 21, birthday: '2000-08-20' },
+            { student_id: 6, student_name: '孙八', sex: '女', student_age: 19, birthday: '2002-03-10' },
+            { student_id: 7, student_name: '周九', sex: '女', student_age: 20, birthday: '2001-07-25' },
+            { student_id: 8, student_name: '吴十', sex: '男', student_age: 23, birthday: '1998-11-30' }
+        ];
+
+        // 步骤数据 - 专注于DELETE语句
+        const steps = [
+            {
+                code: "DELETE FROM students",
+                explanation: "危险操作：不带WHERE条件的DELETE语句将删除表中的所有数据！",
+                animation: "showAllData",
+                warningMessage: "⚠️ 警告：不带WHERE条件的DELETE语句将删除所有数据！请谨慎使用。"
+            },
+            {
+                code: "DELETE FROM students WHERE student_id = 1;",
+                explanation: "按主键删除：使用WHERE条件指定要删除的特定记录（student_id=1）",
+                animation: "deleteById",
+                successMessage: "✅ 删除成功！已删除student_id=1的学生记录。"
+            },
+            {
+                code: "DELETE FROM students WHERE sex = '女';",
+                explanation: "按条件删除：删除所有性别为'女'的学生记录",
+                animation: "deleteBySex",
+                successMessage: "✅ 删除成功！已删除所有性别为'女'的学生记录。"
+            },
+            {
+                code: "DELETE FROM students WHERE student_age > 20;",
+                explanation: "使用比较运算符：删除年龄大于20岁的学生记录",
+                animation: "deleteByAge",
+                successMessage: "✅ 删除成功！已删除所有年龄大于20岁的学生记录。"
+            },
+            {
+                code: "DELETE FROM students WHERE student_name LIKE '张%';",
+                explanation: "使用LIKE模糊匹配：删除所有姓'张'的学生记录",
+                animation: "deleteByNamePattern",
+                successMessage: "✅ 删除成功！已删除所有姓'张'的学生记录。"
+            },
+            {
+                code: "DELETE FROM students WHERE student_age BETWEEN 18 AND 20;",
+                explanation: "使用BETWEEN范围匹配：删除年龄在18到20岁之间的学生记录",
+                animation: "deleteByAgeRange",
+                successMessage: "✅ 删除成功！已删除所有年龄在18到20岁之间的学生记录。"
+            },
+            {
+                code: "DELETE FROM students WHERE student_id IN (4, 5, 6);",
+                explanation: "使用IN条件：删除student_id为4、5或6的学生记录",
+                animation: "deleteByIdList",
+                successMessage: "✅ 删除成功！已删除student_id为4、5、6的学生记录。"
+            },
+            {
+                code: "DELETE FROM students WHERE sex = '男' AND student_age > 21;",
+                explanation: "使用AND多条件：删除性别为'男'且年龄大于21岁的学生记录",
+                animation: "deleteByMultipleConditions",
+                successMessage: "✅ 删除成功！已删除所有性别为'男'且年龄大于21岁的学生记录。"
+            },
+            {
+                code: "DELETE FROM students WHERE sex = '女' OR student_age < 19;",
+                explanation: "使用OR多条件：删除性别为'女'或年龄小于19岁的学生记录",
+                animation: "deleteByOrConditions",
+                successMessage: "✅ 删除成功！已删除所有性别为'女'或年龄小于19岁的学生记录。"
+            },
+            {
+                code: "DELETE FROM students;",
+                explanation: "清空表：不带WHERE条件的DELETE语句将删除所有剩余数据",
+                animation: "deleteAllData",
+                warningMessage: "⚠️ 警告：此操作将删除表中所有剩余数据！表结构将保留但数据将被清空。"
+            },
+            {
+                code: "-- DELETE语句演示完成",
+                explanation: "总结：DELETE语句演示完成，展示了各种WHERE条件和删除操作",
+                animation: "showCompletion",
+                successMessage: "🎉 DELETE语句演示完成！已成功展示各种WHERE条件和删除操作的不同语法。"
+            }
+        ];
+
+        // 当前步骤索引
+        let currentStep = 0;
+        let isPlaying = false;
+        let animationInterval;
+        let stepTimer;
+        let currentData = [...initialData];
+
+        // 初始化
+        function init() {
+            renderCodeLines();
+            renderStepIndicators();
+            setupEventListeners();
+            updateControls();
+        }
+
+        // 渲染代码行
+        function renderCodeLines() {
+            const codeEditor = document.getElementById('code-editor');
+            codeEditor.innerHTML = '';
+            
+            steps.forEach((step, index) => {
+                const codeLine = document.createElement('div');
+                codeLine.className = 'code-line';
+                codeLine.textContent = step.code;
+                codeLine.id = `code-line-${index}`;
+                codeEditor.appendChild(codeLine);
+            });
+        }
+
+        // 渲染步骤指示器
+        function renderStepIndicators() {
+            const stepIndicators = document.getElementById('step-indicators');
+            stepIndicators.innerHTML = '';
+            
+            steps.forEach((_, index) => {
+                const indicator = document.createElement('div');
+                indicator.className = 'step-indicator';
+                indicator.textContent = `步骤 ${index + 1}`;
+                indicator.id = `step-indicator-${index}`;
+                stepIndicators.appendChild(indicator);
+            });
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            document.getElementById('play-btn').addEventListener('click', playAnimation);
+            document.getElementById('pause-btn').addEventListener('click', pauseAnimation);
+            document.getElementById('prev-btn').addEventListener('click', prevStep);
+            document.getElementById('next-btn').addEventListener('click', nextStep);
+            document.getElementById('reset-btn').addEventListener('click', resetAnimation);
+        }
+
+        // 播放动画
+        function playAnimation() {
+            if (currentStep >= steps.length) {
+                resetAnimation();
+            }
+            
+            isPlaying = true;
+            updateControls();
+            
+            // 设置每步7秒的自动播放
+            animationInterval = setInterval(() => {
+                if (currentStep < steps.length - 1) {
+                    nextStep();
+                } else {
+                    pauseAnimation();
+                }
+            }, 7000);
+        }
+
+        // 暂停动画
+        function pauseAnimation() {
+            isPlaying = false;
+            clearInterval(animationInterval);
+            if (stepTimer) clearTimeout(stepTimer);
+            updateControls();
+        }
+
+        // 下一步
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                updateStep();
+            }
+        }
+
+        // 上一步
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateStep();
+            }
+        }
+
+        // 重置动画
+        function resetAnimation() {
+            pauseAnimation();
+            currentStep = 0;
+            currentData = [...initialData];
+            updateStep();
+        }
+
+        // 更新步骤
+        function updateStep() {
+            // 更新代码高亮
+            document.querySelectorAll('.code-line').forEach((line, index) => {
+                line.classList.remove('active', 'completed');
+                if (index === currentStep) {
+                    line.classList.add('active');
+                } else if (index < currentStep) {
+                    line.classList.add('completed');
+                }
+            });
+            
+            // 更新步骤指示器
+            document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+                indicator.classList.remove('active');
+                if (index === currentStep) {
+                    indicator.classList.add('active');
+                }
+            });
+            
+            // 更新进度条
+            const progress = document.getElementById('progress');
+            progress.style.width = `${(currentStep / (steps.length - 1)) * 100}%`;
+            
+            // 更新步骤说明
+            const stepExplanation = document.getElementById('step-explanation');
+            stepExplanation.textContent = steps[currentStep].explanation;
+            
+            // 更新消息
+            const successMessage = document.getElementById('success-message');
+            const errorMessage = document.getElementById('error-message');
+            const warningMessage = document.getElementById('warning-message');
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+            warningMessage.style.display = 'none';
+            
+            // 执行动画
+            executeAnimation(steps[currentStep].animation);
+            
+            // 更新控制按钮状态
+            updateControls();
+        }
+
+        // 更新控制按钮状态
+        function updateControls() {
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('next-btn').disabled = currentStep === steps.length - 1;
+            document.getElementById('play-btn').disabled = isPlaying;
+            document.getElementById('pause-btn').disabled = !isPlaying;
+        }
+
+        // 创建数据表格显示
+        function createDataTable(rows, highlightRows = [], deleteRows = []) {
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            tableContainer.appendChild(dataTable);
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 表';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            dataTable.appendChild(tableBody);
+            
+            // 列名行
+            const columnRow = document.createElement('div');
+            columnRow.className = 'table-row';
+            tableStructure.forEach(column => {
+                columnRow.innerHTML += `<div class="data-cell">${column.name}</div>`;
+            });
+            tableBody.appendChild(columnRow);
+            
+            // 数据行
+            if (rows.length === 0) {
+                const emptyRow = document.createElement('div');
+                emptyRow.className = 'empty-table';
+                emptyRow.textContent = '表中暂无数据';
+                tableBody.appendChild(emptyRow);
+            } else {
+                rows.forEach((rowData, index) => {
+                    const dataRow = document.createElement('div');
+                    let rowClass = 'table-row';
+                    
+                    // 高亮行
+                    if (highlightRows.includes(index)) {
+                        rowClass += ' highlighted-row';
+                    }
+                    
+                    // 标记要删除的行
+                    if (deleteRows.includes(index)) {
+                        rowClass += ' row-to-delete';
+                    }
+                    
+                    dataRow.className = rowClass;
+                    
+                    tableStructure.forEach(column => {
+                        dataRow.innerHTML += `<div class="data-cell">${rowData[column.name] || 'NULL'}</div>`;
+                    });
+                    
+                    tableBody.appendChild(dataRow);
+                });
+            }
+            
+            return tableContainer;
+        }
+
+        // 执行动画
+        function executeAnimation(animationType) {
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            // 根据动画类型执行不同的动画
+            switch(animationType) {
+                case 'showAllData':
+                    tableAnimation.appendChild(createDataTable(currentData, [], []));
+                    showWarningMessage(steps[currentStep].warningMessage);
+                    break;
+                    
+                case 'deleteById':
+                    // 高亮显示要删除的行
+                    const deleteIndex1 = currentData.findIndex(row => row.student_id === 1);
+                    tableAnimation.appendChild(createDataTable(currentData, [], [deleteIndex1]));
+                    
+                    // 延迟执行删除动画
+                    stepTimer = setTimeout(() => {
+                        currentData = currentData.filter(row => row.student_id !== 1);
+                        tableAnimation.innerHTML = '';
+                        tableAnimation.appendChild(createDataTable(currentData));
+                        showSuccessMessage(steps[currentStep].successMessage);
+                    }, 3000);
+                    break;
+                    
+                case 'deleteBySex':
+                    // 高亮显示要删除的行
+                    const femaleIndices = currentData
+                        .map((row, index) => row.sex === '女' ? index : -1)
+                        .filter(index => index !== -1);
+                    tableAnimation.appendChild(createDataTable(currentData, [], femaleIndices));
+                    
+                    // 延迟执行删除动画
+                    stepTimer = setTimeout(() => {
+                        currentData = currentData.filter(row => row.sex !== '女');
+                        tableAnimation.innerHTML = '';
+                        tableAnimation.appendChild(createDataTable(currentData));
+                        showSuccessMessage(steps[currentStep].successMessage);
+                    }, 3000);
+                    break;
+                    
+                case 'deleteByAge':
+                    // 高亮显示要删除的行
+                    const ageIndices = currentData
+                        .map((row, index) => row.student_age > 20 ? index : -1)
+                        .filter(index => index !== -1);
+                    tableAnimation.appendChild(createDataTable(currentData, [], ageIndices));
+                    
+                    // 延迟执行删除动画
+                    stepTimer = setTimeout(() => {
+                        currentData = currentData.filter(row => row.student_age <= 20);
+                        tableAnimation.innerHTML = '';
+                        tableAnimation.appendChild(createDataTable(currentData));
+                        showSuccessMessage(steps[currentStep].successMessage);
+                    }, 3000);
+                    break;
+                    
+                case 'deleteByNamePattern':
+                    // 高亮显示要删除的行
+                    const nameIndices = currentData
+                        .map((row, index) => row.student_name.startsWith('张') ? index : -1)
+                        .filter(index => index !== -1);
+                    tableAnimation.appendChild(createDataTable(currentData, [], nameIndices));
+                    
+                    // 延迟执行删除动画
+                    stepTimer = setTimeout(() => {
+                        currentData = currentData.filter(row => !row.student_name.startsWith('张'));
+                        tableAnimation.innerHTML = '';
+                        tableAnimation.appendChild(createDataTable(currentData));
+                        showSuccessMessage(steps[currentStep].successMessage);
+                    }, 3000);
+                    break;
+                    
+                case 'deleteByAgeRange':
+                    // 高亮显示要删除的行
+                    const rangeIndices = currentData
+                        .map((row, index) => row.student_age >= 18 && row.student_age <= 20 ? index : -1)
+                        .filter(index => index !== -1);
+                    tableAnimation.appendChild(createDataTable(currentData, [], rangeIndices));
+                    
+                    // 延迟执行删除动画
+                    stepTimer = setTimeout(() => {
+                        currentData = currentData.filter(row => row.student_age < 18 || row.student_age > 20);
+                        tableAnimation.innerHTML = '';
+                        tableAnimation.appendChild(createDataTable(currentData));
+                        showSuccessMessage(steps[currentStep].successMessage);
+                    }, 3000);
+                    break;
+                    
+                case 'deleteByIdList':
+                    // 高亮显示要删除的行
+                    const idListIndices = currentData
+                        .map((row, index) => [4, 5, 6].includes(row.student_id) ? index : -1)
+                        .filter(index => index !== -1);
+                    tableAnimation.appendChild(createDataTable(currentData, [], idListIndices));
+                    
+                    // 延迟执行删除动画
+                    stepTimer = setTimeout(() => {
+                        currentData = currentData.filter(row => ![4, 5, 6].includes(row.student_id));
+                        tableAnimation.innerHTML = '';
+                        tableAnimation.appendChild(createDataTable(currentData));
+                        showSuccessMessage(steps[currentStep].successMessage);
+                    }, 3000);
+                    break;
+                    
+                case 'deleteByMultipleConditions':
+                    // 高亮显示要删除的行
+                    const multiIndices = currentData
+                        .map((row, index) => row.sex === '男' && row.student_age > 21 ? index : -1)
+                        .filter(index => index !== -1);
+                    tableAnimation.appendChild(createDataTable(currentData, [], multiIndices));
+                    
+                    // 延迟执行删除动画
+                    stepTimer = setTimeout(() => {
+                        currentData = currentData.filter(row => !(row.sex === '男' && row.student_age > 21));
+                        tableAnimation.innerHTML = '';
+                        tableAnimation.appendChild(createDataTable(currentData));
+                        showSuccessMessage(steps[currentStep].successMessage);
+                    }, 3000);
+                    break;
+                    
+                case 'deleteByOrConditions':
+                    // 高亮显示要删除的行
+                    const orIndices = currentData
+                        .map((row, index) => row.sex === '女' || row.student_age < 19 ? index : -1)
+                        .filter(index => index !== -1);
+                    tableAnimation.appendChild(createDataTable(currentData, [], orIndices));
+                    
+                    // 延迟执行删除动画
+                    stepTimer = setTimeout(() => {
+                        currentData = currentData.filter(row => !(row.sex === '女' || row.student_age < 19));
+                        tableAnimation.innerHTML = '';
+                        tableAnimation.appendChild(createDataTable(currentData));
+                        showSuccessMessage(steps[currentStep].successMessage);
+                    }, 3000);
+                    break;
+                    
+                case 'deleteAllData':
+                    tableAnimation.appendChild(createDataTable(currentData, [], currentData.map((_, index) => index)));
+                    showWarningMessage(steps[currentStep].warningMessage);
+                    
+                    // 延迟执行删除动画
+                    stepTimer = setTimeout(() => {
+                        currentData = [];
+                        tableAnimation.innerHTML = '';
+                        tableAnimation.appendChild(createDataTable(currentData));
+                    }, 3000);
+                    break;
+                    
+                case 'showCompletion':
+                    tableAnimation.appendChild(createDataTable(currentData));
+                    showSuccessMessage(steps[currentStep].successMessage);
+                    break;
+            }
+        }
+
+        // 显示成功消息
+        function showSuccessMessage(message) {
+            const successMessage = document.getElementById('success-message');
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+        }
+
+        // 显示警告消息
+        function showWarningMessage(message) {
+            const warningMessage = document.getElementById('warning-message');
+            warningMessage.textContent = message;
+            warningMessage.style.display = 'block';
+        }
+
+        // 显示错误消息
+        function showErrorMessage(message) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        // 初始化应用
+        window.onload = init;
+    </script>
+</body>
+</html>

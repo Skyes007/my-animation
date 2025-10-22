@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL UPDATE 语句动画演示 - 学生表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2a4d8e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            padding: clamp(12px, 3vw, 20px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 2px solid #4fc3f7;
+        }
+
+        .header h1 {
+            font-size: clamp(1.3rem, 4vw, 2.2rem);
+            margin-bottom: 8px;
+            color: #4fc3f7;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        .header p {
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .code-section {
+            flex: 1;
+            padding: clamp(8px, 1.5vw, 15px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 20, 40, 0.8);
+            border-right: 1px solid rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .code-section {
+                border-right: none;
+                border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+            }
+        }
+
+        /* 标准格式样式 - 占左侧40%高度 */
+        .syntax-format {
+            background: linear-gradient(135deg, #0d1b2a, #1e3a5f);
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            margin-bottom: 12px;
+            border: 2px solid #4fc3f7;
+            box-shadow: 
+                0 0 15px rgba(79, 195, 247, 0.4),
+                inset 0 0 15px rgba(79, 195, 247, 0.1);
+            position: relative;
+            overflow: hidden;
+            flex: 0 0 40%; /* 占左侧40%高度 */
+            overflow-y: auto; /* 允许垂直滚动 */
+        }
+
+        .syntax-format::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            animation: shimmer 3s infinite;
+        }
+
+        .syntax-title {
+            color: #4fc3f7;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
+        }
+
+        .syntax-line {
+            margin-bottom: 4px;
+            padding: 6px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            border-radius: 6px;
+            background: rgba(79, 195, 247, 0.15);
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            line-height: 1.3;
+        }
+
+        .syntax-line:hover {
+            background: rgba(79, 195, 247, 0.25);
+            transform: translateX(3px);
+        }
+
+        .syntax-comment {
+            color: #a8d8ff;
+            font-style: italic;
+            margin-left: 8px;
+            font-size: clamp(0.7rem, 1.3vw, 0.8rem);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .required {
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        .optional {
+            color: #ffb74d;
+        }
+
+        .code-editor {
+            flex: 1; /* 占左侧60%高度 */
+            background: #0d1b2a;
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            overflow: auto; /* 允许滚动 */
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.3);
+        }
+
+        .code-line {
+            margin-bottom: 6px;
+            padding: 6px 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            background: rgba(255, 255, 255, 0.05);
+            line-height: 1.3;
+        }
+
+        .code-line.active {
+            background: rgba(79, 195, 247, 0.2);
+            border-left: 3px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .code-line.completed {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 3px solid #4caf50;
+        }
+
+        .animation-section {
+            flex: 1;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 30, 60, 0.6);
+        }
+
+        .animation-section h2 {
+            margin-bottom: 12px;
+            color: #4fc3f7;
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+        }
+
+        .animation-container {
+            flex: 1;
+            background: rgba(13, 27, 42, 0.7);
+            border-radius: 10px;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .step-explanation {
+            margin-top: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(0, 30, 60, 0.9), rgba(0, 50, 100, 0.9));
+            border-radius: 8px;
+            border-left: 4px solid #4fc3f7;
+            width: 95%;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: clamp(12px, 2vw, 20px);
+            gap: clamp(8px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-top: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .btn {
+            padding: clamp(8px, 2vw, 12px) clamp(15px, 3vw, 25px);
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            color: white;
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #1976d2, #1e88e5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #546e7a;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-container {
+            padding: clamp(10px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            background-size: 200% 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+            animation: progressShimmer 2s infinite;
+        }
+
+        .step-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+        }
+
+        .step-indicator {
+            padding: 6px 12px;
+            border-radius: 15px;
+            background: rgba(79, 195, 247, 0.2);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .step-indicator.active {
+            background: #4fc3f7;
+            color: #0d1b2a;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            transform: scale(1.1);
+        }
+
+        /* 动画关键帧 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes progressShimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(79, 195, 247, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
+            color: #4caf50;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.3));
+            color: #f44336;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            box-shadow: 0 0 8px rgba(244, 67, 54, 0.3);
+        }
+
+        .format-key {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 6px;
+            text-align: center;
+            line-height: 14px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .required-key {
+            background: #4fc3f7;
+            color: white;
+        }
+
+        .optional-key {
+            background: #ffb74d;
+            color: white;
+        }
+        
+        /* 自适应数据表格样式 */
+        .data-table-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+        }
+        
+        .data-table {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        
+        .table-header {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.5vw, 1rem);
+            flex-shrink: 0;
+        }
+        
+        .table-body {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .table-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 10px;
+            font-size: clamp(0.7rem, 1.3vw, 0.85rem);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+        
+        .data-cell {
+            flex: 1;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 4px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .data-cell:last-child {
+            border-right: none;
+        }
+        
+        .highlight-cell {
+            background-color: rgba(255, 235, 59, 0.3) !important;
+            animation: highlightPulse 1.5s infinite;
+        }
+        
+        @keyframes highlightPulse {
+            0% { background-color: rgba(255, 235, 59, 0.3); }
+            50% { background-color: rgba(255, 235, 59, 0.6); }
+            100% { background-color: rgba(255, 235, 59, 0.3); }
+        }
+        
+        .updated-cell {
+            background-color: rgba(76, 175, 80, 0.3) !important;
+            animation: updatePulse 1s;
+        }
+        
+        @keyframes updatePulse {
+            0% { background-color: rgba(76, 175, 80, 0.8); }
+            100% { background-color: rgba(76, 175, 80, 0.3); }
+        }
+        
+        .matched-row {
+            background-color: rgba(255, 152, 0, 0.3) !important;
+            animation: matchPulse 1.5s infinite;
+        }
+        
+        @keyframes matchPulse {
+            0% { background-color: rgba(255, 152, 0, 0.3); }
+            50% { background-color: rgba(255, 152, 0, 0.6); }
+            100% { background-color: rgba(255, 152, 0, 0.3); }
+        }
+        
+        .table-structure-row {
+            display: flex;
+            width: 100%;
+        }
+        
+        .structure-cell {
+            flex: 1;
+            text-align: center;
+            padding: 6px 4px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: clamp(0.7rem, 1.3vw, 0.85rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .structure-cell:last-child {
+            border-right: none;
+        }
+        
+        .structure-header {
+            background: rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+        }
+        
+        .constraint {
+            font-size: 0.7em;
+            color: #ffcc80;
+            margin-left: 5px;
+            font-style: italic;
+        }
+        
+        .data-type {
+            font-size: 0.7em;
+            color: #a5d6a7;
+            margin-left: 5px;
+        }
+        
+        .error-cell {
+            background-color: rgba(244, 67, 54, 0.3) !important;
+            animation: errorPulse 1s infinite;
+        }
+        
+        @keyframes errorPulse {
+            0% { background-color: rgba(244, 67, 54, 0.3); }
+            50% { background-color: rgba(244, 67, 54, 0.6); }
+            100% { background-color: rgba(244, 67, 54, 0.3); }
+        }
+        
+        .success-cell {
+            background-color: rgba(76, 175, 80, 0.3) !important;
+        }
+        
+        /* 小屏幕适配 */
+        @media (max-width: 768px) {
+            .table-row {
+                padding: 4px 6px;
+                font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+            }
+            
+            .data-cell {
+                padding: 0 2px;
+            }
+        }
+        
+        /* 超小屏幕适配 */
+        @media (max-width: 480px) {
+            .table-row {
+                padding: 3px 4px;
+                font-size: clamp(0.5rem, 1vw, 0.65rem);
+            }
+            
+            .data-cell {
+                padding: 0 1px;
+            }
+        }
+        
+        .update-flow {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff5722;
+            border-radius: 50%;
+            animation: updateFlow 2s ease-in-out;
+        }
+        
+        @keyframes updateFlow {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(150px, 0); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SQL UPDATE 语句动画演示 - 学生表</h1>
+            <p>通过分步动画演示UPDATE语句的完整语法和执行过程，包含WHERE子句和SET子句</p>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="step-indicators" id="step-indicators">
+                <!-- 步骤指示器将通过JS动态生成 -->
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="code-section">
+                <!-- 紧凑的标准格式 -->
+                <div class="syntax-format">
+                    <div class="syntax-title">📋 UPDATE 语句标准格式</div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">UPDATE table_name</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">SET column1 = value1, column2 = value2, ...</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">WHERE condition;</span>
+                        <span class="syntax-comment"># 条件筛选（可选）</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">UPDATE table_name</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">SET column1 = value1, column2 = value2, ...</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">WHERE column_name IN (value1, value2, ...);</span>
+                        <span class="syntax-comment"># IN条件</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">WHERE column_name BETWEEN value1 AND value2;</span>
+                        <span class="syntax-comment"># BETWEEN条件</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">WHERE column_name LIKE pattern;</span>
+                        <span class="syntax-comment"># LIKE条件</span>
+                    </div>
+                </div>
+                
+                <div class="code-editor" id="code-editor">
+                    <!-- 代码行将通过JS动态生成 -->
+                </div>
+            </div>
+            
+            <div class="animation-section">
+                <h2>动画演示</h2>
+                <div class="animation-container">
+                    <div class="table-animation" id="table-animation">
+                        <!-- 动画元素将通过JS动态生成 -->
+                    </div>
+                    <div class="step-explanation" id="step-explanation">
+                        点击"开始演示"按钮查看UPDATE语句的完整执行过程
+                    </div>
+                    <div class="success-message" id="success-message"></div>
+                    <div class="error-message" id="error-message"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="prev-btn" disabled>上一步</button>
+            <button class="btn" id="play-btn">开始演示</button>
+            <button class="btn" id="pause-btn" disabled>暂停</button>
+            <button class="btn" id="next-btn" disabled>下一步</button>
+            <button class="btn" id="reset-btn">重置</button>
+        </div>
+    </div>
+
+    <script>
+        // 表结构定义 - 包含数据类型和约束
+        const tableStructure = [
+            { 
+                name: 'student_id', 
+                type: 'INT', 
+                constraints: ['PRIMARY KEY', 'AUTO_INCREMENT'],
+                nullable: false
+            },
+            { 
+                name: 'student_name', 
+                type: 'VARCHAR(50)', 
+                constraints: ['NOT NULL'],
+                nullable: false
+            },
+            { 
+                name: 'sex', 
+                type: 'CHAR(2)', 
+                constraints: ['CHECK(sex IN ("男", "女"))'],
+                nullable: true
+            },
+            { 
+                name: 'student_age', 
+                type: 'INT', 
+                constraints: ['DEFAULT 18'],
+                nullable: true
+            },
+            { 
+                name: 'birthday', 
+                type: 'DATE', 
+                constraints: [],
+                nullable: true
+            }
+        ];
+
+        // 初始数据
+        const initialData = [
+            { student_id: 1, student_name: '张三', sex: '男', student_age: 19, birthday: '2002-12-1' },
+            { student_id: 2, student_name: '李四', sex: '男', student_age: 20, birthday: '2001-12-8' },
+            { student_id: 3, student_name: '王五', sex: '女', student_age: 18, birthday: '1990-12-1' },
+            { student_id: 4, student_name: '赵六', sex: '男', student_age: 18 },
+            { student_id: 5, student_name: '钱七', sex: '男', student_age: 18 },
+            { student_id: 10, student_name: '陈一', sex: '男', student_age: 18, birthday: '2003-11-1' },
+            { student_id: 11, student_name: '陈二', sex: '男', student_age: 19, birthday: '2002-12-1' },
+            { student_id: 12, student_name: '陈三', sex: '男', student_age: 20, birthday: '2001-10-1' }
+        ];
+
+        // 步骤数据 - 专注于UPDATE语句
+        const steps = [
+            {
+                code: "UPDATE students",
+                explanation: "开始更新数据：使用UPDATE语句指定要更新的表名",
+                animation: "showTableStructure",
+                successMessage: "✅ 开始更新数据！指定了要更新的表名。"
+            },
+            {
+                code: "SET student_age = 21",
+                explanation: "设置更新内容：使用SET子句指定要更新的列和新的值",
+                animation: "showSetClause",
+                successMessage: "✅ 设置更新内容！指定了要更新的列student_age和新的值21。"
+            },
+            {
+                code: "WHERE student_id = 1;",
+                explanation: "指定更新条件：使用WHERE子句指定要更新的记录，只有student_id=1的记录会被更新",
+                animation: "showWhereClause",
+                successMessage: "✅ 指定更新条件！只有student_id=1的记录会被更新。"
+            },
+            {
+                code: "-- 更新结果：张三的年龄从19更新为21",
+                explanation: "更新完成：student_id=1的记录中，student_age字段从19更新为21",
+                animation: "showUpdateResult",
+                successMessage: "✅ 更新完成！张三的年龄从19更新为21。"
+            },
+            {
+                code: "UPDATE students",
+                explanation: "开始更新多条记录：使用UPDATE语句更新多条记录",
+                animation: "showTableStructure",
+                successMessage: "✅ 开始更新多条记录！指定了要更新的表名。"
+            },
+            {
+                code: "SET sex = '女'",
+                explanation: "设置更新内容：将所有匹配记录的sex字段更新为'女'",
+                animation: "showSetClause",
+                successMessage: "✅ 设置更新内容！将所有匹配记录的sex字段更新为'女'。"
+            },
+            {
+                code: "WHERE student_name LIKE '陈%';",
+                explanation: "使用LIKE条件：更新所有姓'陈'的学生记录",
+                animation: "showLikeCondition",
+                successMessage: "✅ 使用LIKE条件！更新所有姓'陈'的学生记录。"
+            },
+            {
+                code: "-- 更新结果：所有姓'陈'的学生性别更新为'女'",
+                explanation: "更新完成：陈一、陈二、陈三的性别从'男'更新为'女'",
+                animation: "showMultipleUpdateResult",
+                successMessage: "✅ 更新完成！所有姓'陈'的学生性别更新为'女'。"
+            },
+            {
+                code: "UPDATE students",
+                explanation: "开始更新多个字段：使用UPDATE语句同时更新多个字段",
+                animation: "showTableStructure",
+                successMessage: "✅ 开始更新多个字段！指定了要更新的表名。"
+            },
+            {
+                code: "SET student_age = 22, birthday = '2000-01-01'",
+                explanation: "设置多个更新内容：同时更新student_age和birthday两个字段",
+                animation: "showMultipleSetClause",
+                successMessage: "✅ 设置多个更新内容！同时更新student_age和birthday两个字段。"
+            },
+            {
+                code: "WHERE student_id IN (2, 4);",
+                explanation: "使用IN条件：更新student_id为2和4的记录",
+                animation: "showInCondition",
+                successMessage: "✅ 使用IN条件！更新student_id为2和4的记录。"
+            },
+            {
+                code: "-- 更新结果：李四和赵六的年龄和生日被更新",
+                explanation: "更新完成：李四和赵六的年龄更新为22，生日更新为2000-01-01",
+                animation: "showMultipleFieldsUpdateResult",
+                successMessage: "✅ 更新完成！李四和赵六的年龄更新为22，生日更新为2000-01-01。"
+            },
+            {
+                code: "UPDATE students",
+                explanation: "开始无条件的更新：使用UPDATE语句更新所有记录",
+                animation: "showTableStructure",
+                successMessage: "✅ 开始无条件的更新！将更新所有记录。"
+            },
+            {
+                code: "SET student_age = student_age + 1;",
+                explanation: "使用表达式更新：将student_age字段的值加1",
+                animation: "showExpressionUpdate",
+                successMessage: "✅ 使用表达式更新！将student_age字段的值加1。"
+            },
+            {
+                code: "-- 更新结果：所有学生的年龄增加1岁",
+                explanation: "更新完成：所有学生的年龄都增加了1岁",
+                animation: "showAllUpdateResult",
+                successMessage: "✅ 更新完成！所有学生的年龄都增加了1岁。"
+            },
+            {
+                code: "UPDATE students",
+                explanation: "演示约束验证：尝试更新不符合约束条件的数据",
+                animation: "showTableStructure",
+                successMessage: "✅ 约束验证开始！将尝试更新不符合约束条件的数据。"
+            },
+            {
+                code: "SET sex = '未知'",
+                explanation: "设置违反约束的值：sex列的值'未知'不符合CHECK约束",
+                animation: "showConstraintSet",
+                successMessage: "✅ 设置违反约束的值！sex列的值'未知'不符合CHECK约束。"
+            },
+            {
+                code: "WHERE student_id = 3;",
+                explanation: "指定更新条件：尝试更新student_id=3的记录",
+                animation: "showConstraintWhere",
+                successMessage: "✅ 指定更新条件！尝试更新student_id=3的记录。"
+            },
+            {
+                code: "-- 更新失败：sex列的值'未知'不符合CHECK约束",
+                explanation: "违反约束：sex列的值'未知'不符合CHECK约束(只能是'男'或'女')",
+                animation: "showConstraintViolation",
+                successMessage: "",
+                errorMessage: "❌ 更新失败！sex列的值'未知'不符合CHECK约束(只能是'男'或'女')"
+            },
+            {
+                code: "-- UPDATE语句演示完成",
+                explanation: "总结：UPDATE语句演示完成，展示了基本更新、条件更新、多字段更新和约束验证",
+                animation: "showCompletion",
+                successMessage: "🎉 UPDATE语句演示完成！已成功展示基本更新、条件更新、多字段更新和约束验证的不同语法。"
+            }
+        ];
+
+        // 当前步骤索引
+        let currentStep = 0;
+        let isPlaying = false;
+        let animationInterval;
+
+        // 初始化
+        function init() {
+            renderCodeLines();
+            renderStepIndicators();
+            setupEventListeners();
+            updateControls();
+            executeStep();
+        }
+
+        // 渲染代码行
+        function renderCodeLines() {
+            const codeEditor = document.getElementById('code-editor');
+            codeEditor.innerHTML = '';
+            
+            steps.forEach((step, index) => {
+                const codeLine = document.createElement('div');
+                codeLine.className = 'code-line';
+                codeLine.textContent = step.code;
+                codeLine.id = `code-line-${index}`;
+                codeEditor.appendChild(codeLine);
+            });
+        }
+
+        // 渲染步骤指示器
+        function renderStepIndicators() {
+            const stepIndicators = document.getElementById('step-indicators');
+            stepIndicators.innerHTML = '';
+            
+            steps.forEach((_, index) => {
+                const indicator = document.createElement('div');
+                indicator.className = 'step-indicator';
+                indicator.textContent = `步骤 ${index + 1}`;
+                indicator.id = `step-indicator-${index}`;
+                stepIndicators.appendChild(indicator);
+            });
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            document.getElementById('play-btn').addEventListener('click', playAnimation);
+            document.getElementById('pause-btn').addEventListener('click', pauseAnimation);
+            document.getElementById('prev-btn').addEventListener('click', prevStep);
+            document.getElementById('next-btn').addEventListener('click', nextStep);
+            document.getElementById('reset-btn').addEventListener('click', resetAnimation);
+        }
+
+        // 播放动画
+        function playAnimation() {
+            if (currentStep >= steps.length) {
+                resetAnimation();
+            }
+            
+            isPlaying = true;
+            updateControls();
+            
+            // 设置每步7秒的自动播放
+            animationInterval = setInterval(() => {
+                if (currentStep < steps.length - 1) {
+                    nextStep();
+                } else {
+                    pauseAnimation();
+                }
+            }, 7000);
+        }
+
+        // 暂停动画
+        function pauseAnimation() {
+            isPlaying = false;
+            clearInterval(animationInterval);
+            updateControls();
+        }
+
+        // 上一步
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                executeStep();
+            }
+        }
+
+        // 下一步
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                executeStep();
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        // 重置动画
+        function resetAnimation() {
+            pauseAnimation();
+            currentStep = 0;
+            executeStep();
+        }
+
+        // 执行当前步骤
+        function executeStep() {
+            // 更新进度条
+            const progress = document.getElementById('progress');
+            progress.style.width = `${(currentStep / (steps.length - 1)) * 100}%`;
+            
+            // 更新代码高亮
+            updateCodeHighlight();
+            
+            // 更新步骤指示器
+            updateStepIndicators();
+            
+            // 更新解释文本
+            updateExplanation();
+            
+            // 执行动画
+            executeAnimation();
+            
+            // 更新控制按钮状态
+            updateControls();
+            
+            // 显示成功/错误消息
+            showMessage();
+        }
+
+        // 更新代码高亮
+        function updateCodeHighlight() {
+            const codeLines = document.querySelectorAll('.code-line');
+            codeLines.forEach((line, index) => {
+                line.classList.remove('active', 'completed');
+                if (index === currentStep) {
+                    line.classList.add('active');
+                } else if (index < currentStep) {
+                    line.classList.add('completed');
+                }
+            });
+        }
+
+        // 更新步骤指示器
+        function updateStepIndicators() {
+            const indicators = document.querySelectorAll('.step-indicator');
+            indicators.forEach((indicator, index) => {
+                indicator.classList.remove('active');
+                if (index === currentStep) {
+                    indicator.classList.add('active');
+                }
+            });
+        }
+
+        // 更新解释文本
+        function updateExplanation() {
+            const explanation = document.getElementById('step-explanation');
+            explanation.textContent = steps[currentStep].explanation;
+        }
+
+        // 显示消息
+        function showMessage() {
+            const successMessage = document.getElementById('success-message');
+            const errorMessage = document.getElementById('error-message');
+            
+            if (steps[currentStep].successMessage) {
+                successMessage.textContent = steps[currentStep].successMessage;
+                successMessage.style.display = 'block';
+            } else {
+                successMessage.style.display = 'none';
+            }
+            
+            if (steps[currentStep].errorMessage) {
+                errorMessage.textContent = steps[currentStep].errorMessage;
+                errorMessage.style.display = 'block';
+            } else {
+                errorMessage.style.display = 'none';
+            }
+        }
+
+        // 更新控制按钮状态
+        function updateControls() {
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('next-btn').disabled = currentStep === steps.length - 1;
+            document.getElementById('play-btn').disabled = isPlaying || currentStep === steps.length - 1;
+            document.getElementById('pause-btn').disabled = !isPlaying;
+        }
+
+        // 执行动画
+        function executeAnimation() {
+            const animationContainer = document.getElementById('table-animation');
+            animationContainer.innerHTML = '';
+            
+            const step = steps[currentStep];
+            
+            switch(step.animation) {
+                case 'showTableStructure':
+                    showTableStructure();
+                    break;
+                case 'showSetClause':
+                    showSetClause();
+                    break;
+                case 'showWhereClause':
+                    showWhereClause();
+                    break;
+                case 'showUpdateResult':
+                    showUpdateResult();
+                    break;
+                case 'showLikeCondition':
+                    showLikeCondition();
+                    break;
+                case 'showMultipleUpdateResult':
+                    showMultipleUpdateResult();
+                    break;
+                case 'showMultipleSetClause':
+                    showMultipleSetClause();
+                    break;
+                case 'showInCondition':
+                    showInCondition();
+                    break;
+                case 'showMultipleFieldsUpdateResult':
+                    showMultipleFieldsUpdateResult();
+                    break;
+                case 'showExpressionUpdate':
+                    showExpressionUpdate();
+                    break;
+                case 'showAllUpdateResult':
+                    showAllUpdateResult();
+                    break;
+                case 'showConstraintSet':
+                    showConstraintSet();
+                    break;
+                case 'showConstraintWhere':
+                    showConstraintWhere();
+                    break;
+                case 'showConstraintViolation':
+                    showConstraintViolation();
+                    break;
+                case 'showCompletion':
+                    showCompletion();
+                    break;
+            }
+        }
+
+        // 显示表结构
+        function showTableStructure() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建表结构
+            const table = document.createElement('div');
+            table.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 表结构';
+            table.appendChild(tableHeader);
+            
+            // 表结构行
+            const structureRow = document.createElement('div');
+            structureRow.className = 'table-structure-row';
+            
+            tableStructure.forEach(column => {
+                const cell = document.createElement('div');
+                cell.className = 'structure-cell structure-header';
+                
+                const columnInfo = document.createElement('div');
+                columnInfo.innerHTML = `
+                    <div>${column.name}</div>
+                    <div class="data-type">${column.type}</div>
+                    ${column.constraints.length > 0 ? 
+                      `<div class="constraint">${column.constraints.join(', ')}</div>` : ''}
+                `;
+                
+                cell.appendChild(columnInfo);
+                structureRow.appendChild(cell);
+            });
+            
+            table.appendChild(structureRow);
+            animationContainer.appendChild(table);
+        }
+
+        // 显示SET子句
+        function showSetClause() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示要更新的列
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    cells[3].classList.add('highlight-cell'); // student_age列
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示WHERE子句
+        function showWhereClause() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示匹配的行
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    if (cells[0].textContent === '1') { // student_id=1
+                        row.classList.add('matched-row');
+                    }
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示更新结果
+        function showUpdateResult() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示更新的单元格
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    if (cells[0].textContent === '1') { // student_id=1
+                        cells[3].textContent = '21'; // 更新年龄
+                        cells[3].classList.add('updated-cell');
+                    }
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示LIKE条件
+        function showLikeCondition() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示匹配的行
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    if (cells[1].textContent.startsWith('陈')) { // 姓陈的学生
+                        row.classList.add('matched-row');
+                    }
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示多条记录更新结果
+        function showMultipleUpdateResult() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示更新的单元格
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    if (cells[1].textContent.startsWith('陈')) { // 姓陈的学生
+                        cells[2].textContent = '女'; // 更新性别
+                        cells[2].classList.add('updated-cell');
+                    }
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示多个SET子句
+        function showMultipleSetClause() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示要更新的列
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    cells[3].classList.add('highlight-cell'); // student_age列
+                    cells[4].classList.add('highlight-cell'); // birthday列
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示IN条件
+        function showInCondition() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示匹配的行
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    if (cells[0].textContent === '2' || cells[0].textContent === '4') { // student_id=2或4
+                        row.classList.add('matched-row');
+                    }
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示多字段更新结果
+        function showMultipleFieldsUpdateResult() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示更新的单元格
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    if (cells[0].textContent === '2' || cells[0].textContent === '4') { // student_id=2或4
+                        cells[3].textContent = '22'; // 更新年龄
+                        cells[3].classList.add('updated-cell');
+                        cells[4].textContent = '2000-01-01'; // 更新生日
+                        cells[4].classList.add('updated-cell');
+                    }
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示表达式更新
+        function showExpressionUpdate() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示所有行
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    row.classList.add('matched-row');
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示所有更新结果
+        function showAllUpdateResult() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示更新的单元格
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    const currentAge = parseInt(cells[3].textContent);
+                    cells[3].textContent = (currentAge + 1).toString(); // 年龄加1
+                    cells[3].classList.add('updated-cell');
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示约束设置
+        function showConstraintSet() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示要更新的列
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    cells[2].classList.add('highlight-cell'); // sex列
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示约束WHERE子句
+        function showConstraintWhere() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示匹配的行
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    if (cells[0].textContent === '3') { // student_id=3
+                        row.classList.add('matched-row');
+                    }
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示约束违反
+        function showConstraintViolation() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 高亮显示违反约束的单元格
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.data-cell');
+                    if (cells[0].textContent === '3') { // student_id=3
+                        cells[2].classList.add('error-cell'); // sex列
+                    }
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 显示完成
+        function showCompletion() {
+            const animationContainer = document.getElementById('table-animation');
+            
+            // 创建数据表格
+            const table = createDataTable();
+            
+            // 添加成功标记
+            setTimeout(() => {
+                const rows = table.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    row.classList.add('success-cell');
+                });
+            }, 500);
+            
+            animationContainer.appendChild(table);
+        }
+
+        // 创建数据表格
+        function createDataTable() {
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const table = document.createElement('div');
+            table.className = 'data-table';
+            tableContainer.appendChild(table);
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 表数据';
+            table.appendChild(tableHeader);
+            
+            // 表结构行
+            const structureRow = document.createElement('div');
+            structureRow.className = 'table-structure-row';
+            
+            tableStructure.forEach(column => {
+                const cell = document.createElement('div');
+                cell.className = 'structure-cell structure-header';
+                cell.textContent = column.name;
+                structureRow.appendChild(cell);
+            });
+            
+            table.appendChild(structureRow);
+            
+            // 表数据行
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            initialData.forEach(rowData => {
+                const tableRow = document.createElement('div');
+                tableRow.className = 'table-row';
+                
+                tableStructure.forEach(column => {
+                    const cell = document.createElement('div');
+                    cell.className = 'data-cell';
+                    cell.textContent = rowData[column.name] || 'NULL';
+                    tableRow.appendChild(cell);
+                });
+                
+                tableBody.appendChild(tableRow);
+            });
+            
+            table.appendChild(tableBody);
+            return tableContainer;
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

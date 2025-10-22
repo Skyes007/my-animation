@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL表创建动画演示 -CREATE TABLE创建表</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a2a6c, #3498db, #87CEEB);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #1a73e8, #0d47a1);
+            color: white;
+            padding: clamp(12px, 2vw, 20px);
+            text-align: center;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .header h1 {
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .left-panel {
+            flex: 1;
+            padding: clamp(15px, 2vw, 25px);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding: clamp(15px, 2vw, 25px);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e0e0e0;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: #1a73e8;
+            color: white;
+            box-shadow: 0 0 10px rgba(26, 115, 232, 0.7);
+            animation: pulse 1.5s infinite;
+        }
+
+        .step.completed {
+            background: #0f9d58;
+            color: white;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #1a73e8, #0d47a1);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .step-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .step-title {
+            font-size: clamp(1.2rem, 2vw, 1.6rem);
+            margin-bottom: 15px;
+            color: #1a73e8;
+            font-weight: 600;
+        }
+
+        .step-description {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            color: #555;
+        }
+
+        .code-editor {
+            background: #282c34;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #abb2bf;
+            font-size: 0.9rem;
+        }
+
+        .code-area {
+            flex: 1;
+            background: #1e2227;
+            border-radius: 5px;
+            padding: 15px;
+            overflow: auto;
+            position: relative;
+        }
+
+        .code-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #abb2bf;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            position: relative;
+            z-index: 2;
+        }
+
+        .code-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .hint {
+            background: #e3f2fd;
+            border-left: 4px solid #1a73e8;
+            padding: 10px 15px;
+            margin-top: 10px;
+            border-radius: 0 5px 5px 0;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+
+        .animation-area {
+            flex: 1;
+            background: #f5f9ff;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e1f5fe;
+            animation: glow 2s infinite alternate;
+        }
+
+        .animation-title {
+            text-align: center;
+            font-size: clamp(1.2rem, 2vw, 1.6rem);
+            margin-bottom: 15px;
+            color: #0d47a1;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-prev {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-next {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-validate {
+            background: #4caf50;
+            color: white;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            background: #e0e0e0;
+            color: #9e9e9e;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(26, 115, 232, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05); }
+            100% { box-shadow: 0 5px 20px rgba(33, 150, 243, 0.3); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .sql-example {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 12px;
+            margin-top: 10px;
+            border-left: 4px solid #1a73e8;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+
+        /* 新增的动画样式 */
+        .code-validation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .code-validation.active {
+            opacity: 1;
+        }
+
+        .validation-success {
+            background: linear-gradient(90deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.2));
+            animation: successGlow 1.5s ease;
+        }
+
+        .validation-error {
+            background: linear-gradient(90deg, rgba(244, 67, 54, 0.1), rgba(244, 67, 54, 0.2));
+            animation: errorShake 0.5s ease;
+        }
+
+        @keyframes successGlow {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            50% { box-shadow: 0 0 20px 10px rgba(76, 175, 80, 0.3); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .typing-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: typing 2s infinite;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .typing-animation.active {
+            opacity: 1;
+        }
+
+        @keyframes typing {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .syntax-highlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .syntax-correct {
+            background: rgba(76, 175, 80, 0.05);
+        }
+
+        .syntax-error {
+            background: rgba(244, 67, 54, 0.05);
+        }
+
+        .validation-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff3e0;
+            border-radius: 5px;
+            border-left: 4px solid #ff9800;
+            font-size: 0.85rem;
+            color: #e65100;
+        }
+
+        .validation-details ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .validation-details li {
+            margin-bottom: 3px;
+        }
+
+        /* 表结构样式 */
+        .table-structure {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: auto;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .table-header, .table-row {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr 1.5fr;
+            gap: 10px;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .table-header {
+            background: #e3f2fd;
+            font-weight: bold;
+            border-radius: 8px 8px 0 0;
+            color: #0d47a1;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table-row {
+            transition: all 0.3s ease;
+        }
+
+        .table-row.highlight {
+            background: #e8f5e9;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .field-highlight {
+            background: #e1f5fe !important;
+            color: #01579b;
+            font-weight: bold;
+        }
+
+        .constraint-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #4caf50;
+            color: white;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-right: 5px;
+            margin-bottom: 3px;
+        }
+
+        .constraint-primary {
+            background: #2196f3;
+        }
+
+        .constraint-unique {
+            background: #ff9800;
+        }
+
+        .constraint-check {
+            background: #9c27b0;
+        }
+
+        .constraint-default {
+            background: #607d8b;
+        }
+
+        .constraint-foreign {
+            background: #f44336;
+        }
+
+        .constraint-pending {
+            background: #ffeb3b;
+            color: #333;
+        }
+
+        .constraint-animation {
+            animation: constraintPulse 1.5s ease-in-out;
+        }
+
+        @keyframes constraintPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(33, 150, 243, 0.7); }
+            100% { transform: scale(1); }
+        }
+
+        /* 标准语句格式样式 */
+        .syntax-guide {
+            background: #f0f7ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #bbdefb;
+        }
+
+        .syntax-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1565c0;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .syntax-structure {
+            background: #e3f2fd;
+            border-radius: 5px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #0d47a1;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .syntax-keyword {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+
+        .syntax-parameter {
+            color: #388e3c;
+            font-weight: bold;
+        }
+
+        .syntax-optional {
+            color: #7b1fa2;
+            font-style: italic;
+        }
+
+        .syntax-explanation {
+            font-size: 0.85rem;
+            color: #546e7a;
+            line-height: 1.5;
+        }
+
+        .syntax-explanation ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .syntax-explanation li {
+            margin-bottom: 3px;
+        }
+
+        .foreign-key-diagram {
+            background: #fff8e1;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid #ffd54f;
+        }
+
+        .foreign-key-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ff8f00;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .foreign-key-connection {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .foreign-key-table {
+            background: #e3f2fd;
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #2196f3;
+            font-weight: 600;
+        }
+
+        .foreign-key-arrow {
+            font-size: 1.2rem;
+            color: #2196f3;
+        }
+        
+        /* 新增的级联操作样式 */
+        .cascade-info {
+            background: #e8f5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid #4caf50;
+            display: none;
+        }
+        
+        .cascade-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .cascade-description {
+            font-size: 0.9rem;
+            color: #388e3c;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        
+        .cascade-example {
+            background: #c8e6c9;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #1b5e20;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MySQL表创建动画演示 - T_Student表</h1>
+            <p>创建学生信息表 - 交互式学习体验</p>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+        
+        <div class="content">
+            <div class="left-panel">
+                <div class="step-indicator">
+                    <div class="step active" id="step1">1</div>
+                    <div class="step" id="step2">2</div>
+                    <div class="step" id="step3">3</div>
+                    <div class="step" id="step4">4</div>
+                    <div class="step" id="step5">5</div>
+                </div>
+                
+                <div class="step-content">
+                    <h2 class="step-title" id="stepTitle">步骤1: 创建基本表结构</h2>
+                    <p class="step-description" id="stepDescription">首先，我们需要创建T_Student表的基本结构，包含所有字段但不包含约束。</p>
+                    
+                    <div class="code-editor">
+                        <div class="code-header">
+                            <span>SQL 编辑器</span>
+                            <span>MySQL</span>
+                        </div>
+                        <div class="code-area">
+                            <textarea class="code-input" id="codeInput" placeholder="在此输入SQL语句..."></textarea>
+                            <div class="code-background">
+                                <div class="code-validation" id="codeValidation"></div>
+                                <div class="typing-animation" id="typingAnimation"></div>
+                                <div class="syntax-highlight" id="syntaxHighlight"></div>
+                            </div>
+                        </div>
+                        <div class="hint" id="hint">提示：使用CREATE TABLE语句创建表结构</div>
+                        <div class="sql-example" id="sqlExample">示例：CREATE TABLE T_Student (S_number CHAR(10), S_name CHAR(20), Sex CHAR(2), Birthday DATETIME, BirthPlace VARCHAR(50), Ploitics VARCHAR(50), Class_number INT, MobilePhone VARCHAR(50), Dormitory VARCHAR(50));</div>
+                    </div>
+                    
+                    <div class="success-message" id="successMessage">✓ 正确！SQL语句执行成功。</div>
+                    <div class="error-message" id="errorMessage">✗ 错误！请检查SQL语句是否正确。</div>
+                    <div class="validation-details" id="validationDetails" style="display: none;"></div>
+                    
+                    <div class="controls">
+                        <button class="btn btn-prev" id="prevBtn" disabled>上一步</button>
+                        <button class="btn btn-validate" id="validateBtn">验证SQL</button>
+                        <button class="btn btn-next" id="nextBtn" disabled>下一步</button>
+                        <button class="btn btn-reset" id="resetBtn">重置</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <!-- 标准语句格式区域 -->
+                <div class="syntax-guide">
+                    <div class="syntax-title">CREATE TABLE 标准语句格式</div>
+                    <div class="syntax-structure">
+                        <span class="syntax-keyword">CREATE TABLE</span> <span class="syntax-parameter">table_name</span> (<br>
+                        &nbsp;&nbsp;<span class="syntax-parameter">column1</span> <span class="syntax-parameter">datatype</span> [<span class="syntax-optional">constraints</span>],<br>
+                        &nbsp;&nbsp;<span class="syntax-parameter">column2</span> <span class="syntax-parameter">datatype</span> [<span class="syntax-optional">constraints</span>],<br>
+                        &nbsp;&nbsp;...<br>
+                        &nbsp;&nbsp;[<span class="syntax-optional">PRIMARY KEY (column)</span>]<br>
+                        &nbsp;&nbsp;[<span class="syntax-optional">FOREIGN KEY (column) REFERENCES table(column)</span>]<br>
+                        &nbsp;&nbsp;[<span class="syntax-optional">CHECK (condition)</span>]<br>
+                        )[ENGINE = engine_name];# 存储引擎（可选）默认ENGINE=InnoDB;
+                    </div>
+                    <div class="syntax-explanation">
+                        <strong>常用约束：</strong>
+                        <ul>
+                            <li><span class="syntax-keyword">PRIMARY KEY</span> - 主键约束</li>
+                            <li><span class="syntax-keyword">NOT NULL</span> - 非空约束</li>
+                            <li><span class="syntax-keyword">UNIQUE</span> - 唯一约束</li>
+                            <li><span class="syntax-keyword">CHECK</span> - 检查约束</li>
+                            <li><span class="syntax-keyword">DEFAULT</span> - 默认值</li>
+                            <li><span class="syntax-keyword">FOREIGN KEY</span> - 外键约束</li>
+                        </ul>
+                        <strong>外键级联操作：</strong>
+                        <ul>
+                            <li><span class="syntax-keyword">ON DELETE CASCADE</span> - 主表删除时同步删除子表记录</li>
+                            <li><span class="syntax-keyword">ON UPDATE CASCADE</span> - 主表更新时同步更新子表记录</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="animation-area">
+                    <h3 class="animation-title" id="animationTitle">T_Student 表结构</h3>
+                    
+                    <div class="table-structure">
+                        <div class="table-header">
+                            <div>字段名</div>
+                            <div>数据类型</div>
+                            <div>约束条件</div>
+                            <div>中文含义</div>
+                        </div>
+                        <div class="table-row" id="field1">
+                            <div>S_number</div>
+                            <div>CHAR(10)</div>
+                            <div>
+                                <span class="constraint-badge constraint-pending" id="constraint1">PRIMARY KEY</span>
+                            </div>
+                            <div>学号</div>
+                        </div>
+                        <div class="table-row" id="field2">
+                            <div>S_name</div>
+                            <div>CHAR(20)</div>
+                            <div>
+                                <span class="constraint-badge constraint-pending" id="constraint2">UNIQUE</span>
+                            </div>
+                            <div>姓名</div>
+                        </div>
+                        <div class="table-row" id="field3">
+                            <div>Sex</div>
+                            <div>CHAR(2)</div>
+                            <div>
+                                <span class="constraint-badge constraint-pending" id="constraint3">CHECKSex IN ('男', '女') <br>DEFAULT '男'</span>
+                            </div>
+                            <div>性别</div>
+                        </div>
+                        <div class="table-row" id="field4">
+                            <div>Birthday</div>
+                            <div>DATETIME</div>
+                            <div></div>
+                            <div>出生日期</div>
+                        </div>
+                        <div class="table-row" id="field5">
+                            <div>BirthPlace</div>
+                            <div>VARCHAR(50)</div>
+                            <div></div>
+                            <div>籍贯</div>
+                        </div>
+                        <div class="table-row" id="field6">
+                            <div>Ploitics</div>
+                            <div>VARCHAR(50)</div>
+                            <div></div>
+                            <div>政治面貌</div>
+                        </div>
+                        <div class="table-row" id="field7">
+                            <div>Class_number</div>
+                            <div>INT</div>
+                            <div>
+                                <span class="constraint-badge constraint-pending" id="constraint4">FOREIGN KEY REFERENCES T_class(Class_number)</span>
+                            </div>
+                            <div>班级编号</div>
+                        </div>
+                        <div class="table-row" id="field8">
+                            <div>MobilePhone</div>
+                            <div>VARCHAR(50)</div>
+                            <div></div>
+                            <div>手机号码</div>
+                        </div>
+                        <div class="table-row" id="field9">
+                            <div>Dormitory</div>
+                            <div>VARCHAR(50)</div>
+                            <div></div>
+                            <div>宿舍</div>
+                        </div>
+                    </div>
+
+                    <!-- 外键关系图 -->
+                    <div class="foreign-key-diagram" id="foreignKeyDiagram" style="display: none;">
+                        <div class="foreign-key-title">外键关系图</div>
+                        <div class="foreign-key-connection">
+                            <div class="foreign-key-table">T_Student.Class_number</div>
+                            <div class="foreign-key-arrow">→</div>
+                            <div class="foreign-key-table">T_Class.Class_number</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 级联操作信息 -->
+                    <div class="cascade-info" id="cascadeInfo">
+                        <div class="cascade-title">级联操作说明</div>
+                        <div class="cascade-description">
+                            <strong>ON DELETE CASCADE</strong>: 当T_Class表中的班级记录被删除时，T_Student表中对应的学生记录也会自动删除。<br>
+                            <strong>ON UPDATE CASCADE</strong>: 当T_Class表中的班级编号更新时，T_Student表中对应的班级编号也会自动更新。
+                        </div>
+                        <div class="cascade-example">
+                            示例：<br>
+                            删除班级1 → 自动删除班级1的所有学生<br>
+                            更新班级1为班级10 → 自动更新学生班级编号为10
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 步骤数据
+            const steps = [
+                {
+                    title: "步骤1: 创建基本表结构",
+                    description: "首先，我们需要创建T_Student表的基本结构，包含所有字段但不包含约束。",
+                    hint: "提示：使用CREATE TABLE语句创建表结构",
+                    sqlExample: "CREATE TABLE T_Student (S_number CHAR(10), S_name CHAR(20), Sex CHAR(2), Birthday DATETIME, BirthPlace VARCHAR(50), Ploitics VARCHAR(50), Class_number INT, MobilePhone VARCHAR(50), Dormitory VARCHAR(50));",
+                    correctAnswer: "CREATE TABLE T_Student (S_number CHAR(10), S_name CHAR(20), Sex CHAR(2), Birthday DATETIME, BirthPlace VARCHAR(50), Ploitics VARCHAR(50), Class_number INT, MobilePhone VARCHAR(50), Dormitory VARCHAR(50));",
+                    highlightFields: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                    updateConstraints: function() {
+                        // 第一步不添加约束，保持"待添加"状态
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('CREATE') && 
+                                       normalized.includes('TABLE') &&
+                                       normalized.includes('T_STUDENT');
+                            }, 
+                            message: "必须包含 CREATE TABLE 和表名称 T_Student" 
+                        },
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                // 宽松的字段检查
+                                const hasFields = normalized.includes('S_NUMBER') && 
+                                                normalized.includes('S_NAME') &&
+                                                normalized.includes('SEX') &&
+                                                normalized.includes('BIRTHDAY') &&
+                                                normalized.includes('BIRTHPLACE') &&
+                                                normalized.includes('PLOITICS') &&
+                                                normalized.includes('CLASS_NUMBER') &&
+                                                normalized.includes('MOBILEPHONE') &&
+                                                normalized.includes('DORMITORY');
+                                return hasFields;
+                            }, 
+                            message: "必须包含所有9个字段" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤2: 添加主键和唯一约束",
+                    description: "现在为S_number字段添加主键约束，为S_name字段添加NOT NULL和UNIQUE约束。",
+                    hint: "提示：使用PRIMARY KEY和NOT NULL UNIQUE约束",
+                    sqlExample: "CREATE TABLE T_Student (S_number CHAR(10) PRIMARY KEY, S_name CHAR(20) NOT NULL UNIQUE, Sex CHAR(2), Birthday DATETIME, BirthPlace VARCHAR(50), Ploitics VARCHAR(50), Class_number INT, MobilePhone VARCHAR(50), Dormitory VARCHAR(50));",
+                    correctAnswer: "CREATE TABLE T_Student (S_number CHAR(10) PRIMARY KEY, S_name CHAR(20) NOT NULL UNIQUE, Sex CHAR(2), Birthday DATETIME, BirthPlace VARCHAR(50), Ploitics VARCHAR(50), Class_number INT, MobilePhone VARCHAR(50), Dormitory VARCHAR(50));",
+                    highlightFields: [1, 2],
+                    updateConstraints: function() {
+                        // 更新约束显示
+                        const constraint1 = document.getElementById('constraint1');
+                        const constraint2 = document.getElementById('constraint2');
+                        constraint1.className = 'constraint-badge constraint-primary constraint-animation';
+                        constraint1.textContent = 'PRIMARY KEY';
+                        constraint2.className = 'constraint-badge constraint-unique constraint-animation';
+                        constraint2.textContent = 'NOT NULL UNIQUE';
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('PRIMARY') && normalized.includes('KEY');
+                            }, 
+                            message: "必须为 S_number 字段添加 PRIMARY KEY 约束" 
+                        },
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('NOT') && normalized.includes('NULL') && normalized.includes('UNIQUE');
+                            }, 
+                            message: "必须为 S_name 字段添加 NOT NULL UNIQUE 约束" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤3: 添加CHECK和DEFAULT约束",
+                    description: "为Sex字段添加CHECK约束限制值为'男'或'女'，并设置默认值为'男'。",
+                    hint: "提示：使用CHECK和DEFAULT约束",
+                    sqlExample: "CREATE TABLE T_Student (S_number CHAR(10) PRIMARY KEY, S_name CHAR(20) NOT NULL UNIQUE, Sex CHAR(2) CHECK(Sex='男' OR Sex='女') DEFAULT '男', Birthday DATETIME, BirthPlace VARCHAR(50), Ploitics VARCHAR(50), Class_number INT, MobilePhone VARCHAR(50), Dormitory VARCHAR(50));",
+                    correctAnswer: "CREATE TABLE T_Student (S_number CHAR(10) PRIMARY KEY, S_name CHAR(20) NOT NULL UNIQUE, Sex CHAR(2) CHECK(Sex='男' OR Sex='女') DEFAULT '男', Birthday DATETIME, BirthPlace VARCHAR(50), Ploitics VARCHAR(50), Class_number INT, MobilePhone VARCHAR(50), Dormitory VARCHAR(50));",
+                    highlightFields: [3],
+                    updateConstraints: function() {
+                        // 更新约束显示
+                        const constraint3 = document.getElementById('constraint3');
+                        constraint3.className = 'constraint-badge constraint-check constraint-animation';
+                        constraint3.textContent = 'CHECK DEFAULT';
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('CHECK') && normalized.includes('SEX');
+                            }, 
+                            message: "必须为 Sex 字段添加 CHECK 约束" 
+                        },
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('DEFAULT') && normalized.includes("'男'");
+                            }, 
+                            message: "必须为 Sex 字段设置默认值 '男'" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤4: 添加外键约束",
+                    description: "为Class_number字段添加外键约束，引用T_Class表的Class_number字段。",
+                    hint: "提示：使用FOREIGN KEY REFERENCES约束",
+                    sqlExample: "CREATE TABLE T_Student (S_number CHAR(10) PRIMARY KEY, S_name CHAR(20) NOT NULL UNIQUE, Sex CHAR(2) CHECK(Sex='男' OR Sex='女') DEFAULT '男', Birthday DATETIME, BirthPlace VARCHAR(50), Ploitics VARCHAR(50), Class_number INT, MobilePhone VARCHAR(50), Dormitory VARCHAR(50), FOREIGN KEY (Class_number) REFERENCES T_Class(Class_number));",
+                    correctAnswer: "CREATE TABLE T_Student (S_number CHAR(10) PRIMARY KEY, S_name CHAR(20) NOT NULL UNIQUE, Sex CHAR(2) CHECK(Sex='男' OR Sex='女') DEFAULT '男', Birthday DATETIME, BirthPlace VARCHAR(50), Ploitics VARCHAR(50), Class_number INT, MobilePhone VARCHAR(50), Dormitory VARCHAR(50), FOREIGN KEY (Class_number) REFERENCES T_Class(Class_number));",
+                    highlightFields: [7],
+                    updateConstraints: function() {
+                        // 更新约束显示
+                        const constraint4 = document.getElementById('constraint4');
+                        constraint4.className = 'constraint-badge constraint-foreign constraint-animation';
+                        constraint4.textContent = 'FOREIGN KEY REFERENCES T_Class(Class_number)';
+                        
+                        // 显示外键关系图
+                        document.getElementById('foreignKeyDiagram').style.display = 'block';
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('FOREIGN') && normalized.includes('KEY') && normalized.includes('REFERENCES');
+                            }, 
+                            message: "必须包含 FOREIGN KEY REFERENCES 约束" 
+                        },
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('T_CLASS') && normalized.includes('CLASS_NUMBER');
+                            }, 
+                            message: "外键必须引用 T_Class 表的 Class_number 字段" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤5: 添加级联操作",
+                    description: "为外键约束添加ON DELETE CASCADE和ON UPDATE CASCADE选项，实现同步删除和更新。",
+                    hint: "提示：在FOREIGN KEY约束后添加ON DELETE CASCADE ON UPDATE CASCADE",
+                    sqlExample: "CREATE TABLE T_Student (S_number CHAR(10) PRIMARY KEY, S_name CHAR(20) NOT NULL UNIQUE, Sex CHAR(2) CHECK(Sex='男' OR Sex='女') DEFAULT '男', Birthday DATETIME, BirthPlace VARCHAR(50), Ploitics VARCHAR(50), Class_number INT, MobilePhone VARCHAR(50), Dormitory VARCHAR(50), FOREIGN KEY (Class_number) REFERENCES T_Class(Class_number) ON DELETE CASCADE ON UPDATE CASCADE);",
+                    correctAnswer: "CREATE TABLE T_Student (S_number CHAR(10) PRIMARY KEY, S_name CHAR(20) NOT NULL UNIQUE, Sex CHAR(2) CHECK(Sex='男' OR Sex='女') DEFAULT '男', Birthday DATETIME, BirthPlace VARCHAR(50), Ploitics VARCHAR(50), Class_number INT, MobilePhone VARCHAR(50), Dormitory VARCHAR(50), FOREIGN KEY (Class_number) REFERENCES T_Class(Class_number) ON DELETE CASCADE ON UPDATE CASCADE);",
+                    highlightFields: [7],
+                    updateConstraints: function() {
+                        // 更新约束显示
+                        const constraint4 = document.getElementById('constraint4');
+                        constraint4.className = 'constraint-badge constraint-foreign constraint-animation';
+                        constraint4.textContent = 'FOREIGN KEY REFERENCES T_Class(Class_number) ON DELETE CASCADE ON UPDATE CASCADE';
+                        
+                        // 显示外键关系图和级联操作信息
+                        document.getElementById('foreignKeyDiagram').style.display = 'block';
+                        document.getElementById('cascadeInfo').style.display = 'block';
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('ON') && normalized.includes('DELETE') && normalized.includes('CASCADE');
+                            }, 
+                            message: "必须包含 ON DELETE CASCADE 选项" 
+                        },
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes('ON') && normalized.includes('UPDATE') && normalized.includes('CASCADE');
+                            }, 
+                            message: "必须包含 ON UPDATE CASCADE 选项" 
+                        }
+                    ]
+                }
+            ];
+
+            // DOM元素
+            const stepElements = [
+                document.getElementById('step1'),
+                document.getElementById('step2'),
+                document.getElementById('step3'),
+                document.getElementById('step4'),
+                document.getElementById('step5')
+            ];
+            
+            const stepTitle = document.getElementById('stepTitle');
+            const stepDescription = document.getElementById('stepDescription');
+            const hint = document.getElementById('hint');
+            const sqlExample = document.getElementById('sqlExample');
+            const codeInput = document.getElementById('codeInput');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const validateBtn = document.getElementById('validateBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const progress = document.getElementById('progress');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const validationDetails = document.getElementById('validationDetails');
+            const codeValidation = document.getElementById('codeValidation');
+            const typingAnimation = document.getElementById('typingAnimation');
+            const syntaxHighlight = document.getElementById('syntaxHighlight');
+            
+            // 当前步骤
+            let currentStep = 0;
+            
+            // 初始化
+            function initialize() {
+                updateStepDisplay();
+                codeInput.value = '';
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
+                validationDetails.style.display = 'none';
+                document.getElementById('foreignKeyDiagram').style.display = 'none';
+                document.getElementById('cascadeInfo').style.display = 'none';
+                
+                // 重置所有约束显示
+                const constraints = document.querySelectorAll('.constraint-badge');
+                constraints.forEach(constraint => {
+                    constraint.className = 'constraint-badge constraint-pending';
+                });
+                
+                // 重置所有字段高亮
+                const fields = document.querySelectorAll('.table-row');
+                fields.forEach(field => {
+                    field.classList.remove('highlight');
+                });
+                
+                // 添加事件监听器
+                prevBtn.addEventListener('click', goToPrevStep);
+                nextBtn.addEventListener('click', goToNextStep);
+                validateBtn.addEventListener('click', validateSQL);
+                resetBtn.addEventListener('click', resetAll);
+                
+                // 添加输入监听
+                codeInput.addEventListener('input', function() {
+                    codeValidation.classList.remove('active');
+                    typingAnimation.classList.add('active');
+                    setTimeout(() => {
+                        typingAnimation.classList.remove('active');
+                    }, 2000);
+                });
+            }
+            
+            // 更新步骤显示
+            function updateStepDisplay() {
+                // 更新步骤指示器
+                stepElements.forEach((step, index) => {
+                    if (index < currentStep) {
+                        step.className = 'step completed';
+                    } else if (index === currentStep) {
+                        step.className = 'step active';
+                    } else {
+                        step.className = 'step';
+                    }
+                });
+                
+                // 更新进度条
+                progress.style.width = `${(currentStep / (steps.length - 1)) * 100}%`;
+                
+                // 更新内容
+                const step = steps[currentStep];
+                stepTitle.textContent = step.title;
+                stepDescription.textContent = step.description;
+                hint.textContent = step.hint;
+                sqlExample.textContent = step.sqlExample;
+                
+                // 更新按钮状态
+                prevBtn.disabled = currentStep === 0;
+                nextBtn.disabled = true;
+                
+                // 更新字段高亮
+                const fields = document.querySelectorAll('.table-row');
+                fields.forEach((field, index) => {
+                    if (step.highlightFields.includes(index + 1)) {
+                        field.classList.add('highlight');
+                    } else {
+                        field.classList.remove('highlight');
+                    }
+                });
+                
+                // 更新约束显示
+                step.updateConstraints();
+                
+                // 清空消息
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
+                validationDetails.style.display = 'none';
+            }
+            
+            // 验证SQL
+            function validateSQL() {
+                const userSQL = codeInput.value.trim();
+                const step = steps[currentStep];
+                
+                // 清空之前的验证结果
+                codeValidation.className = 'code-validation';
+                syntaxHighlight.className = 'syntax-highlight';
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
+                validationDetails.style.display = 'none';
+                
+                // 检查SQL语法
+                let isValid = true;
+                const errorMessages = [];
+                
+                for (const rule of step.validationRules) {
+                    if (!rule.check(userSQL)) {
+                        isValid = false;
+                        errorMessages.push(rule.message);
+                    }
+                }
+                
+                // 显示验证结果
+                if (isValid) {
+                    codeValidation.className = 'code-validation validation-success active';
+                    syntaxHighlight.className = 'syntax-highlight syntax-correct';
+                    successMessage.style.display = 'block';
+                    nextBtn.disabled = false;
+                    
+                    // 自动进入下一步（可选）
+                    setTimeout(() => {
+                        if (currentStep < steps.length - 1) {
+                            goToNextStep();
+                        }
+                    }, 1500);
+                } else {
+                    codeValidation.className = 'code-validation validation-error active';
+                    syntaxHighlight.className = 'syntax-highlight syntax-error';
+                    errorMessage.style.display = 'block';
+                    
+                    // 显示详细错误信息
+                    validationDetails.innerHTML = '<strong>错误详情：</strong><ul>' + 
+                        errorMessages.map(msg => `<li>${msg}</li>`).join('') + '</ul>';
+                    validationDetails.style.display = 'block';
+                }
+            }
+            
+            // 上一步
+            function goToPrevStep() {
+                if (currentStep > 0) {
+                    currentStep--;
+                    updateStepDisplay();
+                    codeInput.value = '';
+                }
+            }
+            
+            // 下一步
+            function goToNextStep() {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    updateStepDisplay();
+                    codeInput.value = '';
+                }
+            }
+            
+            // 重置所有
+            function resetAll() {
+                currentStep = 0;
+                initialize();
+            }
+            
+            // 启动初始化
+            initialize();
+        });
+    </script>
+</body>
+</html>

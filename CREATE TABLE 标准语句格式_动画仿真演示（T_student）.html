@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL CREATE TABLE 语句动画演示 - 学生表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2a4d8e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            padding: clamp(12px, 3vw, 20px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 2px solid #4fc3f7;
+        }
+
+        .header h1 {
+            font-size: clamp(1.3rem, 4vw, 2.2rem);
+            margin-bottom: 8px;
+            color: #4fc3f7;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        .header p {
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .code-section {
+            flex: 1;
+            padding: clamp(8px, 1.5vw, 15px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 20, 40, 0.8);
+            border-right: 1px solid rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .code-section {
+                border-right: none;
+                border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+            }
+        }
+
+        /* 标准格式样式 - 占左侧40%高度 */
+        .syntax-format {
+            background: linear-gradient(135deg, #0d1b2a, #1e3a5f);
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            margin-bottom: 12px;
+            border: 2px solid #4fc3f7;
+            box-shadow: 
+                0 0 15px rgba(79, 195, 247, 0.4),
+                inset 0 0 15px rgba(79, 195, 247, 0.1);
+            position: relative;
+            overflow: hidden;
+            flex: 0 0 40%; /* 占左侧40%高度 */
+            overflow-y: auto; /* 允许垂直滚动 */
+        }
+
+        .syntax-format::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            animation: shimmer 3s infinite;
+        }
+
+        .syntax-title {
+            color: #4fc3f7;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
+        }
+
+        .syntax-line {
+            margin-bottom: 4px;
+            padding: 6px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            border-radius: 6px;
+            background: rgba(79, 195, 247, 0.15);
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            line-height: 1.3;
+        }
+
+        .syntax-line:hover {
+            background: rgba(79, 195, 247, 0.25);
+            transform: translateX(3px);
+        }
+
+        .syntax-comment {
+            color: #a8d8ff;
+            font-style: italic;
+            margin-left: 8px;
+            font-size: clamp(0.7rem, 1.3vw, 0.8rem);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .required {
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        .optional {
+            color: #ffb74d;
+        }
+
+        .code-editor {
+            flex: 1; /* 占左侧60%高度 */
+            background: #0d1b2a;
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            overflow: auto; /* 允许滚动 */
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.3);
+        }
+
+        .code-line {
+            margin-bottom: 6px;
+            padding: 6px 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            background: rgba(255, 255, 255, 0.05);
+            line-height: 1.3;
+        }
+
+        .code-line.active {
+            background: rgba(79, 195, 247, 0.2);
+            border-left: 3px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .code-line.completed {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 3px solid #4caf50;
+        }
+
+        .animation-section {
+            flex: 1;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 30, 60, 0.6);
+        }
+
+        .animation-section h2 {
+            margin-bottom: 12px;
+            color: #4fc3f7;
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+        }
+
+        .animation-container {
+            flex: 1;
+            background: rgba(13, 27, 42, 0.7);
+            border-radius: 10px;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .step-explanation {
+            margin-top: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(0, 30, 60, 0.9), rgba(0, 50, 100, 0.9));
+            border-radius: 8px;
+            border-left: 4px solid #4fc3f7;
+            width: 95%;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: clamp(12px, 2vw, 20px);
+            gap: clamp(8px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-top: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .btn {
+            padding: clamp(8px, 2vw, 12px) clamp(15px, 3vw, 25px);
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            color: white;
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #1976d2, #1e88e5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #546e7a;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-container {
+            padding: clamp(10px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            background-size: 200% 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+            animation: progressShimmer 2s infinite;
+        }
+
+        .step-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+        }
+
+        .step-indicator {
+            padding: 6px 12px;
+            border-radius: 15px;
+            background: rgba(79, 195, 247, 0.2);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .step-indicator.active {
+            background: #4fc3f7;
+            color: #0d1b2a;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            transform: scale(1.1);
+        }
+
+        /* 动画区域样式 */
+        .table-animation {
+            width: 100%;
+            height: 250px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .table-icon {
+            width: 120px;
+            height: 80px;
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            border-radius: 8px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            box-shadow: 0 0 20px rgba(79, 195, 247, 0.7);
+            transition: all 0.5s ease;
+        }
+
+        .table-icon::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            width: 140px;
+            height: 10px;
+            background: #1976d2;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .table-column {
+            position: absolute;
+            width: 20px;
+            height: 60px;
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            border-radius: 4px 4px 0 0;
+            bottom: 0;
+            transition: all 0.5s ease;
+        }
+
+        /* 动画关键帧 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes progressShimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(79, 195, 247, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+        }
+
+        @keyframes creatingTable {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes tableCreated {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); box-shadow: 0 0 30px rgba(79, 195, 247, 1); }
+            100% { transform: scale(1); }
+        }
+
+        .table-icon.creating {
+            animation: creatingTable 2s ease-in-out;
+        }
+
+        .table-icon.created {
+            animation: tableCreated 1.5s ease-in-out;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
+            color: #4caf50;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .feature-highlight {
+            position: absolute;
+            background: linear-gradient(135deg, #fff, #e3f2fd);
+            color: #1565c0;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            font-weight: bold;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(15px);
+            transition: all 0.3s ease;
+            border: 1px solid #bbdefb;
+        }
+
+        .feature-highlight.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .table-name {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .table-name.show {
+            opacity: 1;
+        }
+
+        .floating-text {
+            position: absolute;
+            color: #4fc3f7;
+            font-size: clamp(0.8rem, 1.5vw, 1rem);
+            font-weight: bold;
+            opacity: 0;
+            animation: floatText 2s ease-in-out;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        @keyframes floatText {
+            0% { transform: translateY(0); opacity: 0; }
+            50% { transform: translateY(-25px); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+
+        .format-key {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 6px;
+            text-align: center;
+            line-height: 14px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .required-key {
+            background: #4fc3f7;
+            color: white;
+        }
+
+        .optional-key {
+            background: #ffb74d;
+            color: white;
+        }
+
+        .timer-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #4fc3f7;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        /* 新增样式：级联操作演示 */
+        .cascade-demo {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .parent-table, .child-table {
+            width: 100px;
+            height: 60px;
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            position: absolute;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+        }
+        
+        .parent-table {
+            left: 50px;
+            top: 50px;
+        }
+        
+        .child-table {
+            right: 50px;
+            bottom: 50px;
+        }
+        
+        .cascade-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            transform-origin: left center;
+            z-index: -1;
+        }
+        
+        .cascade-effect {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff5722;
+            border-radius: 50%;
+            animation: cascadeMove 2s ease-in-out;
+        }
+        
+        @keyframes cascadeMove {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(200px, 100px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SQL CREATE TABLE 语句动画演示 - 学生表</h1>
+            <p>通过分步动画演示CREATE TABLE语句的完整语法和执行过程</p>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="step-indicators" id="step-indicators">
+                <!-- 步骤指示器将通过JS动态生成 -->
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="code-section">
+                <!-- 紧凑的标准格式 -->
+                <div class="syntax-format">
+                    <div class="syntax-title">📋 CREATE TABLE 标准格式</div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">CREATE TABLE table_name</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">(</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">column1 datatype [constraints],</span>
+                        <span class="syntax-comment"># 列定义（必需）</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[UNIQUE (column_name)],</span>
+                        <span class="syntax-comment"># 唯一约束（可选）</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[DEFAULT default_value],</span>
+                        <span class="syntax-comment"># 默认值（可选）</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[CONSTRAINT constraint_name] PRIMARY KEY (column1),</span>
+                        <span class="syntax-comment"># 主键约束（可选）</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">FOREIGN KEY (column2) REFERENCES other_table(column),</span>
+                        <span class="syntax-comment"># 外键约束（可选）</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">CHECK (condition)</span>
+                        <span class="syntax-comment"># 检查约束（可选）</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">);</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[ENGINE = engine_name];</span>
+                        <span class="syntax-comment"># 存储引擎（可选）</span>
+                    </div>
+                </div>
+                
+                <div class="code-editor" id="code-editor">
+                    <!-- 代码行将通过JS动态生成 -->
+                </div>
+            </div>
+            
+            <div class="animation-section">
+                <h2>动画演示</h2>
+                <div class="animation-container">
+                    <div class="table-animation" id="table-animation">
+                        <!-- 动画元素将通过JS动态生成 -->
+                    </div>
+                    <div class="step-explanation" id="step-explanation">
+                        点击"开始演示"按钮查看CREATE TABLE语句的完整执行过程
+                    </div>
+                    <div class="success-message" id="success-message"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="prev-btn" disabled>上一步</button>
+            <button class="btn" id="play-btn">开始演示</button>
+            <button class="btn" id="pause-btn" disabled>暂停</button>
+            <button class="btn" id="next-btn" disabled>下一步</button>
+            <button class="btn" id="reset-btn">重置</button>
+        </div>
+    </div>
+
+    <script>
+        // 步骤数据 - 专注于CREATE TABLE语句标准格式
+        const steps = [
+            {
+                code: "CREATE TABLE T_Student (",
+                explanation: "开始创建表：使用CREATE TABLE语句开始创建新表，指定表名称为T_Student",
+                animation: "showTableStart",
+                successMessage: "✅ 开始创建表！表名称为T_Student。"
+            },
+            {
+                code: "S_number char(10) primary key,",
+                explanation: "定义主键列：S_number列作为主键，使用char(10)数据类型，学号作为唯一标识",
+                animation: "showPrimaryKey",
+                successMessage: "✅ 主键列定义成功！S_number列作为主键，学号是唯一标识。"
+            },
+            {
+                code: "S_name char(20) not null unique,",
+                explanation: "定义必需且唯一列：S_name列使用char(20)数据类型，NOT NULL约束确保姓名不能为空，UNIQUE约束确保姓名不重复",
+                animation: "showRequiredUniqueColumn",
+                successMessage: "✅ 必需且唯一列定义成功！S_name列不能为空且姓名不能重复。"
+            },
+            {
+                code: "Sex char(2) check(Sex='男' or Sex='女') default '男',",
+                explanation: "定义检查约束和默认值列：Sex列使用char(2)数据类型，CHECK约束确保性别只能是'男'或'女'，DEFAULT设置默认值为'男'",
+                animation: "showCheckDefaultColumn",
+                successMessage: "✅ 检查约束和默认值列定义成功！Sex列只能是'男'或'女'，默认值为'男'。"
+            },
+            {
+                code: "Birthday datetime,",
+                explanation: "定义日期列：Birthday列使用datetime数据类型，存储学生的出生日期",
+                animation: "showDateColumn",
+                successMessage: "✅ 日期列定义成功！Birthday列存储学生的出生日期。"
+            },
+            {
+                code: "BirthPlace varchar(50),",
+                explanation: "定义变长字符串列：BirthPlace列使用varchar(50)数据类型，存储学生的籍贯信息",
+                animation: "showVarcharColumn",
+                successMessage: "✅ 变长字符串列定义成功！BirthPlace列存储学生的籍贯信息。"
+            },
+            {
+                code: "Ploitics varchar(50),",
+                explanation: "定义政治面貌列：Ploitics列使用varchar(50)数据类型，存储学生的政治面貌信息",
+                animation: "showPoliticsColumn",
+                successMessage: "✅ 政治面貌列定义成功！Ploitics列存储学生的政治面貌信息。"
+            },
+            {
+                code: "Class_number int,",
+                explanation: "定义外键列：Class_number列作为外键，使用int数据类型，将关联到班级表",
+                animation: "showForeignKey",
+                successMessage: "✅ 外键列定义成功！Class_number将关联到班级表。"
+            },
+            {
+                code: "MobilePhone varchar(50),",
+                explanation: "定义手机号列：MobilePhone列使用varchar(50)数据类型，存储学生的手机号码",
+                animation: "showPhoneColumn",
+                successMessage: "✅ 手机号列定义成功！MobilePhone列存储学生的手机号码。"
+            },
+            {
+                code: "Dormitory varchar(50),",
+                explanation: "定义宿舍列：Dormitory列使用varchar(50)数据类型，存储学生的宿舍信息",
+                animation: "showDormitoryColumn",
+                successMessage: "✅ 宿舍列定义成功！Dormitory列存储学生的宿舍信息。"
+            },
+            {
+                code: "foreign key(Class_number) references T_Class(Class_number) ON DELETE CASCADE ON UPDATE CASCADE",
+                explanation: "定义外键约束：明确指定Class_number列引用T_Class表的Class_number列，并设置级联删除和更新，确保数据同步",
+                animation: "showForeignKeyConstraint",
+                successMessage: "✅ 外键约束定义成功！Class_number引用T_Class表的Class_number列，并设置级联操作确保数据同步。"
+            },
+            {
+                code: ");",
+                explanation: "结束表定义：使用分号和右括号结束CREATE TABLE语句",
+                animation: "showTableEnd",
+                successMessage: "✅ 表定义结束！CREATE TABLE语句已完成。"
+            },
+            {
+                code: "-- 学生表创建完成",
+                explanation: "总结：CREATE TABLE语句已完成执行，学生表已准备就绪，包含所有列和约束，包括级联操作的外键约束",
+                animation: "showCompletion",
+                successMessage: "🎉 CREATE TABLE语句演示完成！T_Student表已成功创建并配置所有选项，包括级联操作的外键约束。"
+            }
+        ];
+
+        // 当前步骤索引
+        let currentStep = 0;
+        let isPlaying = false;
+        let animationInterval;
+        let stepTimer;
+
+        // 初始化
+        function init() {
+            renderCodeLines();
+            renderStepIndicators();
+            setupEventListeners();
+            updateControls();
+        }
+
+        // 渲染代码行
+        function renderCodeLines() {
+            const codeEditor = document.getElementById('code-editor');
+            codeEditor.innerHTML = '';
+            
+            steps.forEach((step, index) => {
+                const codeLine = document.createElement('div');
+                codeLine.className = 'code-line';
+                codeLine.textContent = step.code;
+                codeLine.id = `code-line-${index}`;
+                codeEditor.appendChild(codeLine);
+            });
+        }
+
+        // 渲染步骤指示器
+        function renderStepIndicators() {
+            const stepIndicators = document.getElementById('step-indicators');
+            stepIndicators.innerHTML = '';
+            
+            steps.forEach((_, index) => {
+                const indicator = document.createElement('div');
+                indicator.className = 'step-indicator';
+                indicator.textContent = `步骤 ${index + 1}`;
+                indicator.id = `step-indicator-${index}`;
+                stepIndicators.appendChild(indicator);
+            });
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            document.getElementById('play-btn').addEventListener('click', playAnimation);
+            document.getElementById('pause-btn').addEventListener('click', pauseAnimation);
+            document.getElementById('prev-btn').addEventListener('click', prevStep);
+            document.getElementById('next-btn').addEventListener('click', nextStep);
+            document.getElementById('reset-btn').addEventListener('click', resetAnimation);
+        }
+
+        // 播放动画
+        function playAnimation() {
+            if (currentStep >= steps.length) {
+                resetAnimation();
+            }
+            
+            isPlaying = true;
+            updateControls();
+            
+            // 设置每步7秒的自动播放
+            animationInterval = setInterval(() => {
+                if (currentStep < steps.length - 1) {
+                    nextStep();
+                } else {
+                    pauseAnimation();
+                }
+            }, 7000);
+        }
+
+        // 暂停动画
+        function pauseAnimation() {
+            isPlaying = false;
+            clearInterval(animationInterval);
+            if (stepTimer) clearTimeout(stepTimer);
+            updateControls();
+        }
+
+        // 下一步
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                updateStep();
+            }
+        }
+
+        // 上一步
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateStep();
+            }
+        }
+
+        // 重置动画
+        function resetAnimation() {
+            pauseAnimation();
+            currentStep = 0;
+            updateStep();
+        }
+
+        // 更新步骤
+        function updateStep() {
+            // 更新代码高亮
+            document.querySelectorAll('.code-line').forEach((line, index) => {
+                line.classList.remove('active', 'completed');
+                if (index === currentStep) {
+                    line.classList.add('active');
+                } else if (index < currentStep) {
+                    line.classList.add('completed');
+                }
+            });
+            
+            // 更新步骤指示器
+            document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+                indicator.classList.remove('active');
+                if (index === currentStep) {
+                    indicator.classList.add('active');
+                }
+            });
+            
+            // 更新进度条
+            const progress = document.getElementById('progress');
+            progress.style.width = `${(currentStep / (steps.length - 1)) * 100}%`;
+            
+            // 更新步骤说明
+            const stepExplanation = document.getElementById('step-explanation');
+            stepExplanation.textContent = steps[currentStep].explanation;
+            
+            // 更新消息
+            const successMessage = document.getElementById('success-message');
+            successMessage.style.display = 'none';
+            
+            // 执行动画
+            executeAnimation(steps[currentStep].animation);
+            
+            // 更新控制按钮状态
+            updateControls();
+        }
+
+        // 更新控制按钮状态
+        function updateControls() {
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('next-btn').disabled = currentStep === steps.length - 1;
+            document.getElementById('play-btn').disabled = isPlaying;
+            document.getElementById('pause-btn').disabled = !isPlaying;
+        }
+
+        // 执行动画
+        function executeAnimation(animationType) {
+            const animationContainer = document.getElementById('table-animation');
+            const successMessage = document.getElementById('success-message');
+            
+            // 清除之前的动画
+            animationContainer.innerHTML = '';
+            successMessage.style.display = 'none';
+            
+            // 根据动画类型执行不同的动画
+            switch(animationType) {
+                case 'showTableStart':
+                    // 创建表图标
+                    const tableIcon = document.createElement('div');
+                    tableIcon.className = 'table-icon';
+                    tableIcon.textContent = 'T_Student';
+                    animationContainer.appendChild(tableIcon);
+                    
+                    // 创建表名称标签
+                    const tableName = document.createElement('div');
+                    tableName.className = 'table-name';
+                    tableName.textContent = '表名称: T_Student';
+                    animationContainer.appendChild(tableName);
+                    
+                    tableIcon.classList.add('creating');
+                    setTimeout(() => {
+                        tableIcon.classList.remove('creating');
+                        tableIcon.classList.add('created');
+                        tableName.classList.add('show');
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 3000);
+                    break;
+                    
+                case 'showPrimaryKey':
+                    // 创建表图标
+                    const tableIcon2 = document.createElement('div');
+                    tableIcon2.className = 'table-icon';
+                    tableIcon2.textContent = 'T_Student';
+                    animationContainer.appendChild(tableIcon2);
+                    
+                    // 创建表名称标签
+                    const tableName2 = document.createElement('div');
+                    tableName2.className = 'table-name';
+                    tableName2.textContent = '表名称: T_Student';
+                    animationContainer.appendChild(tableName2);
+                    
+                    tableIcon2.classList.add('creating');
+                    setTimeout(() => {
+                        tableIcon2.classList.remove('creating');
+                        tableIcon2.classList.add('created');
+                        tableName2.classList.add('show');
+                        
+                        // 添加主键提示
+                        const primaryKeyHint = document.createElement('div');
+                        primaryKeyHint.className = 'feature-highlight';
+                        primaryKeyHint.textContent = '主键: S_number';
+                        primaryKeyHint.style.top = '20px';
+                        primaryKeyHint.style.right = '20px';
+                        animationContainer.appendChild(primaryKeyHint);
+                        
+                        setTimeout(() => {
+                            primaryKeyHint.classList.add('show');
+                            successMessage.textContent = steps[currentStep].successMessage;
+                            successMessage.style.display = 'block';
+                        }, 1000);
+                    }, 2000);
+                    break;
+                    
+                case 'showRequiredUniqueColumn':
+                    // 创建表图标
+                    const tableIcon3 = document.createElement('div');
+                    tableIcon3.className = 'table-icon';
+                    tableIcon3.textContent = 'T_Student';
+                    animationContainer.appendChild(tableIcon3);
+                    
+                    // 创建表名称标签
+                    const tableName3 = document.createElement('div');
+                    tableName3.className = 'table-name';
+                    tableName3.textContent = '表名称: T_Student';
+                    animationContainer.appendChild(tableName3);
+                    
+                    tableIcon3.classList.add('created');
+                    tableName3.classList.add('show');
+                    
+                    // 添加主键提示
+                    const primaryKeyHint2 = document.createElement('div');
+                    primaryKeyHint2.className = 'feature-highlight';
+                    primaryKeyHint2.textContent = '主键: S_number';
+                    primaryKeyHint2.style.top = '20px';
+                    primaryKeyHint2.style.right = '20px';
+                    animationContainer.appendChild(primaryKeyHint2);
+                    primaryKeyHint2.classList.add('show');
+                    
+                    // 添加必需且唯一列提示
+                    const requiredUniqueHint = document.createElement('div');
+                    requiredUniqueHint.className = 'feature-highlight';
+                    requiredUniqueHint.textContent = '必需且唯一: S_name';
+                    requiredUniqueHint.style.top = '60px';
+                    requiredUniqueHint.style.right = '20px';
+                    animationContainer.appendChild(requiredUniqueHint);
+                    
+                    setTimeout(() => {
+                        requiredUniqueHint.classList.add('show');
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 1000);
+                    break;
+                    
+                case 'showCheckDefaultColumn':
+                    // 创建表图标
+                    const tableIcon4 = document.createElement('div');
+                    tableIcon4.className = 'table-icon';
+                    tableIcon4.textContent = 'T_Student';
+                    animationContainer.appendChild(tableIcon4);
+                    
+                    // 创建表名称标签
+                    const tableName4 = document.createElement('div');
+                    tableName4.className = 'table-name';
+                    tableName4.textContent = '表名称: T_Student';
+                    animationContainer.appendChild(tableName4);
+                    
+                    tableIcon4.classList.add('created');
+                    tableName4.classList.add('show');
+                    
+                    // 添加检查约束和默认值提示
+                    const checkDefaultHint = document.createElement('div');
+                    checkDefaultHint.className = 'feature-highlight';
+                    checkDefaultHint.textContent = '检查约束和默认值: Sex';
+                    checkDefaultHint.style.top = '100px';
+                    checkDefaultHint.style.right = '20px';
+                    animationContainer.appendChild(checkDefaultHint);
+                    
+                    setTimeout(() => {
+                        checkDefaultHint.classList.add('show');
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 1000);
+                    break;
+                    
+                case 'showForeignKeyConstraint':
+                    // 创建级联操作演示
+                    const cascadeDemo = document.createElement('div');
+                    cascadeDemo.className = 'cascade-demo';
+                    animationContainer.appendChild(cascadeDemo);
+                    
+                    // 创建父表
+                    const parentTable = document.createElement('div');
+                    parentTable.className = 'parent-table';
+                    parentTable.textContent = 'T_Class';
+                    cascadeDemo.appendChild(parentTable);
+                    
+                    // 创建子表
+                    const childTable = document.createElement('div');
+                    childTable.className = 'child-table';
+                    childTable.textContent = 'T_Student';
+                    cascadeDemo.appendChild(childTable);
+                    
+                    // 创建连接线
+                    const cascadeLine = document.createElement('div');
+                    cascadeLine.className = 'cascade-line';
+                    cascadeLine.style.width = '200px';
+                    cascadeLine.style.transform = 'rotate(-30deg)';
+                    cascadeLine.style.top = '80px';
+                    cascadeLine.style.left = '150px';
+                    cascadeDemo.appendChild(cascadeLine);
+                    
+                    // 创建级联效果
+                    const cascadeEffect = document.createElement('div');
+                    cascadeEffect.className = 'cascade-effect';
+                    cascadeEffect.style.top = '70px';
+                    cascadeEffect.style.left = '150px';
+                    cascadeDemo.appendChild(cascadeEffect);
+                    
+                    // 添加级联操作说明
+                    const cascadeText = document.createElement('div');
+                    cascadeText.className = 'floating-text';
+                    cascadeText.textContent = 'ON DELETE CASCADE ON UPDATE CASCADE';
+                    cascadeText.style.top = '120px';
+                    cascadeText.style.left = '180px';
+                    cascadeDemo.appendChild(cascadeText);
+                    
+                    setTimeout(() => {
+                        cascadeText.style.animation = 'floatText 2s ease-in-out';
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 500);
+                    break;
+                    
+                case 'showCompletion':
+                    // 创建表图标
+                    const tableIconFinal = document.createElement('div');
+                    tableIconFinal.className = 'table-icon';
+                    tableIconFinal.textContent = 'T_Student';
+                    animationContainer.appendChild(tableIconFinal);
+                    
+                    // 创建表名称标签
+                    const tableNameFinal = document.createElement('div');
+                    tableNameFinal.className = 'table-name';
+                    tableNameFinal.textContent = '表名称: T_Student';
+                    animationContainer.appendChild(tableNameFinal);
+                    
+                    tableIconFinal.classList.add('created');
+                    tableNameFinal.classList.add('show');
+                    
+                    // 添加所有约束提示
+                    const constraints = [
+                        { text: '主键: S_number', top: '20px' },
+                        { text: '必需且唯一: S_name', top: '60px' },
+                        { text: '检查约束和默认值: Sex', top: '100px' },
+                        { text: '外键约束: Class_number', top: '140px' },
+                        { text: '级联操作: ON DELETE/UPDATE CASCADE', top: '180px' }
+                    ];
+                    
+                    constraints.forEach((constraint, index) => {
+                        const constraintHint = document.createElement('div');
+                        constraintHint.className = 'feature-highlight';
+                        constraintHint.textContent = constraint.text;
+                        constraintHint.style.top = constraint.top;
+                        constraintHint.style.right = '20px';
+                        animationContainer.appendChild(constraintHint);
+                        
+                        setTimeout(() => {
+                            constraintHint.classList.add('show');
+                        }, index * 300);
+                    });
+                    
+                    setTimeout(() => {
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 2000);
+                    break;
+                    
+                default:
+                    // 默认动画 - 显示表图标
+                    const defaultTableIcon = document.createElement('div');
+                    defaultTableIcon.className = 'table-icon';
+                    defaultTableIcon.textContent = 'T_Student';
+                    animationContainer.appendChild(defaultTableIcon);
+                    
+                    // 创建表名称标签
+                    const defaultTableName = document.createElement('div');
+                    defaultTableName.className = 'table-name';
+                    defaultTableName.textContent = '表名称: T_Student';
+                    animationContainer.appendChild(defaultTableName);
+                    
+                    defaultTableIcon.classList.add('created');
+                    defaultTableName.classList.add('show');
+                    
+                    setTimeout(() => {
+                        successMessage.textContent = steps[currentStep].successMessage;
+                        successMessage.style.display = 'block';
+                    }, 1000);
+                    break;
+            }
+        }
+
+        // 初始化应用
+        window.onload = init;
+    </script>
+</body>
+</html>
