@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL DROP/TRUNCATE/DELETE 语句动画演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2a4d8e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            padding: clamp(12px, 3vw, 20px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 2px solid #4fc3f7;
+        }
+
+        .header h1 {
+            font-size: clamp(1.3rem, 4vw, 2.2rem);
+            margin-bottom: 8px;
+            color: #4fc3f7;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        .header p {
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .code-section {
+            flex: 1;
+            padding: clamp(8px, 1.5vw, 15px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 20, 40, 0.8);
+            border-right: 1px solid rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .code-section {
+                border-right: none;
+                border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+            }
+        }
+
+        /* 标准格式样式 */
+        .syntax-format {
+            background: linear-gradient(135deg, #0d1b2a, #1e3a5f);
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            margin-bottom: 12px;
+            border: 2px solid #4fc3f7;
+            box-shadow: 
+                0 0 15px rgba(79, 195, 247, 0.4),
+                inset 0 0 15px rgba(79, 195, 247, 0.1);
+            position: relative;
+            overflow: hidden;
+            flex: 0 0 40%;
+            overflow-y: auto;
+        }
+
+        .syntax-format::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            animation: shimmer 3s infinite;
+        }
+
+        .syntax-title {
+            color: #4fc3f7;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
+        }
+
+        .syntax-line {
+            margin-bottom: 4px;
+            padding: 6px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            border-radius: 6px;
+            background: rgba(79, 195, 247, 0.15);
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            line-height: 1.3;
+        }
+
+        .syntax-line:hover {
+            background: rgba(79, 195, 247, 0.25);
+            transform: translateX(3px);
+        }
+
+        .syntax-comment {
+            color: #a8d8ff;
+            font-style: italic;
+            margin-left: 8px;
+            font-size: clamp(0.7rem, 1.3vw, 0.8rem);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .required {
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        .optional {
+            color: #ffb74d;
+        }
+
+        .code-editor {
+            flex: 1;
+            background: #0d1b2a;
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            overflow: auto;
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.3);
+        }
+
+        .code-line {
+            margin-bottom: 6px;
+            padding: 6px 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            background: rgba(255, 255, 255, 0.05);
+            line-height: 1.3;
+        }
+
+        .code-line.active {
+            background: rgba(79, 195, 247, 0.2);
+            border-left: 3px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .code-line.completed {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 3px solid #4caf50;
+        }
+
+        .animation-section {
+            flex: 1;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 30, 60, 0.6);
+        }
+
+        .animation-section h2 {
+            margin-bottom: 12px;
+            color: #4fc3f7;
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+        }
+
+        .animation-container {
+            flex: 1;
+            background: rgba(13, 27, 42, 0.7);
+            border-radius: 10px;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .step-explanation {
+            margin-top: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(0, 30, 60, 0.9), rgba(0, 50, 100, 0.9));
+            border-radius: 8px;
+            border-left: 4px solid #4fc3f7;
+            width: 95%;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: clamp(12px, 2vw, 20px);
+            gap: clamp(8px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-top: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .btn {
+            padding: clamp(8px, 2vw, 12px) clamp(15px, 3vw, 25px);
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            color: white;
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #1976d2, #1e88e5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #546e7a;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-container {
+            padding: clamp(10px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            background-size: 200% 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+            animation: progressShimmer 2s infinite;
+        }
+
+        .step-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+        }
+
+        .step-indicator {
+            padding: 6px 12px;
+            border-radius: 15px;
+            background: rgba(79, 195, 247, 0.2);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .step-indicator.active {
+            background: #4fc3f7;
+            color: #0d1b2a;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            transform: scale(1.1);
+        }
+
+        /* 动画关键帧 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes progressShimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(79, 195, 247, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
+            color: #4caf50;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.3));
+            color: #f44336;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            box-shadow: 0 0 8px rgba(244, 67, 54, 0.3);
+        }
+
+        .format-key {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 6px;
+            text-align: center;
+            line-height: 14px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .required-key {
+            background: #4fc3f7;
+            color: white;
+        }
+
+        .optional-key {
+            background: #ffb74d;
+            color: white;
+        }
+        
+        /* 数据表格样式 */
+        .data-table-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+        }
+        
+        .data-table {
+            width: 95%;
+            height: 90%;
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        
+        .table-header {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.5vw, 1rem);
+            flex-shrink: 0;
+        }
+        
+        .table-body {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .table-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 10px;
+            font-size: clamp(0.7rem, 1.3vw, 0.85rem);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+        
+        .data-cell {
+            flex: 1;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 4px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+        
+        .data-cell:last-child {
+            border-right: none;
+        }
+        
+        .highlight {
+            background-color: rgba(255, 255, 255, 0.3);
+            animation: highlight 1.5s ease;
+        }
+        
+        @keyframes highlight {
+            0% { background-color: rgba(255, 255, 255, 0); }
+            50% { background-color: rgba(255, 255, 255, 0.5); }
+            100% { background-color: rgba(255, 255, 255, 0.3); }
+        }
+        
+        .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background-color: rgba(255, 255, 255, 0.3);
+            cursor: col-resize;
+        }
+        
+        .resize-handle:hover {
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+        
+        /* 小屏幕适配 */
+        @media (max-width: 768px) {
+            .table-row {
+                padding: 4px 6px;
+                font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+            }
+            
+            .data-cell {
+                padding: 0 2px;
+            }
+        }
+        
+        /* 超小屏幕适配 */
+        @media (max-width: 480px) {
+            .table-row {
+                padding: 3px 4px;
+                font-size: clamp(0.5rem, 1vw, 0.65rem);
+            }
+            
+            .data-cell {
+                padding: 0 1px;
+            }
+        }
+        
+        .query-result {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #4fc3f7;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .data-flow {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff5722;
+            border-radius: 50%;
+            animation: dataFlow 2s ease-in-out;
+        }
+        
+        @keyframes dataFlow {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(150px, 0); opacity: 0; }
+        }
+        
+        .record-count {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #4fc3f7;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .between-highlight {
+            background-color: rgba(76, 175, 80, 0.3);
+            animation: betweenHighlight 2s ease-in-out;
+        }
+        
+        @keyframes betweenHighlight {
+            0% { background-color: rgba(76, 175, 80, 0); }
+            50% { background-color: rgba(76, 175, 80, 0.5); }
+            100% { background-color: rgba(76, 175, 80, 0.3); }
+        }
+
+        .initial-data-highlight {
+            background-color: rgba(79, 195, 247, 0.3);
+            animation: initialHighlight 2s ease-in-out;
+        }
+        
+        @keyframes initialHighlight {
+            0% { background-color: rgba(79, 195, 247, 0); }
+            50% { background-color: rgba(79, 195, 247, 0.5); }
+            100% { background-color: rgba(79, 195, 247, 0.3); }
+        }
+
+        .initial-info {
+            text-align: center;
+            padding: 10px;
+            background: rgba(79, 195, 247, 0.1);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #4fc3f7;
+        }
+        
+        .warning-highlight {
+            background-color: rgba(255, 152, 0, 0.3);
+            animation: warningHighlight 2s ease-in-out;
+        }
+        
+        @keyframes warningHighlight {
+            0% { background-color: rgba(255, 152, 0, 0); }
+            50% { background-color: rgba(255, 152, 0, 0.5); }
+            100% { background-color: rgba(255, 152, 0, 0.3); }
+        }
+        
+        .danger-highlight {
+            background-color: rgba(244, 67, 54, 0.3);
+            animation: dangerHighlight 2s ease-in-out;
+        }
+        
+        @keyframes dangerHighlight {
+            0% { background-color: rgba(244, 67, 54, 0); }
+            50% { background-color: rgba(244, 67, 54, 0.5); }
+            100% { background-color: rgba(244, 67, 54, 0.3); }
+        }
+        
+        .table-dropped {
+            background: linear-gradient(135deg, #f44336, #e53935);
+            animation: tableDrop 2s ease-in-out;
+        }
+        
+        @keyframes tableDrop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        .empty-table {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .transaction-log {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffb74d;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            max-width: 200px;
+        }
+        
+        .new-record-highlight {
+            background-color: rgba(76, 175, 80, 0.5);
+            animation: newRecordHighlight 2s ease-in-out;
+        }
+        
+        @keyframes newRecordHighlight {
+            0% { background-color: rgba(76, 175, 80, 0); }
+            50% { background-color: rgba(76, 175, 80, 0.7); }
+            100% { background-color: rgba(76, 175, 80, 0.5); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SQL DROP/TRUNCATE/DELETE 语句动画演示</h1>
+            <p>通过分步动画演示DROP TABLE、TRUNCATE TABLE和DELETE FROM语句的语法和执行过程</p>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="step-indicators" id="step-indicators">
+                <!-- 步骤指示器将通过JS动态生成 -->
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="code-section">
+                <!-- 标准格式 -->
+                <div class="syntax-format">
+                    <div class="syntax-title">📋 DROP/TRUNCATE/DELETE 语句标准格式</div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">DROP TABLE [IF EXISTS] table_name;</span>
+                        <span class="syntax-comment"># 删除整个表，包括表结构和数据</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">TRUNCATE TABLE table_name;</span>
+                        <span class="syntax-comment"># 清空表数据，保留表结构</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">DELETE FROM table_name</span>
+                        <span class="optional">[WHERE condition]</span>
+                        <span class="required">;</span>
+                        <span class="syntax-comment"># 删除表数据，可指定条件</span>
+                    </div>
+                    <div class="syntax-line" style="margin-top: 10px; background: rgba(255, 152, 0, 0.2);">
+                        <span class="syntax-comment" style="margin-left: 0; width: 100%;">
+                            <strong>对比 TRUNCATE TABLE 和 DELETE FROM 命令的区别：</strong><br>
+                            TRUNCATE TABLE 不记录事务操作，执行速度快，会重置自增字段；<br>
+                            DELETE FROM 可以结合 WHERE 子句删除部分数据，会记录事务操作，执行速度相对较慢。
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="code-editor" id="code-editor">
+                    <!-- 代码行将通过JS动态生成 -->
+                </div>
+            </div>
+            
+            <div class="animation-section">
+                <h2>动画演示</h2>
+                <div class="animation-container">
+                    <div class="table-animation" id="table-animation">
+                        <!-- 动画元素将通过JS动态生成 -->
+                    </div>
+                    <div class="step-explanation" id="step-explanation">
+                        点击"开始演示"按钮查看DROP/TRUNCATE/DELETE语句的完整执行过程
+                    </div>
+                    <div class="success-message" id="success-message"></div>
+                    <div class="error-message" id="error-message"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="prev-btn" disabled>上一步</button>
+            <button class="btn" id="play-btn">开始演示</button>
+            <button class="btn" id="pause-btn" disabled>暂停</button>
+            <button class="btn" id="next-btn" disabled>下一步</button>
+            <button class="btn" id="reset-btn">重置</button>
+        </div>
+    </div>
+
+    <script>
+        // 表结构定义
+        const tableStructure = [
+            { name: 'student_id', type: 'INT', constraints: ['PRIMARY KEY', 'AUTO_INCREMENT'] },
+            { name: 'student_name', type: 'VARCHAR(50)', constraints: [] },
+            { name: 'sex', type: 'CHAR(2)', constraints: [] },
+            { name: 'student_age', type: 'INT', constraints: ['DEFAULT 18'] },
+            { name: 'birthday', type: 'DATE', constraints: [] }
+        ];
+
+        // 示例数据
+        const studentData = [
+            { student_id: 1, student_name: '张三', sex: '男', student_age: 19, birthday: '2002-12-01' },
+            { student_id: 2, student_name: '李四', sex: '男', student_age: 20, birthday: '2001-12-08' },
+            { student_id: 3, student_name: '王五', sex: '女', student_age: 18, birthday: '1990-12-01' },
+            { student_id: 4, student_name: '赵六', sex: '男', student_age: 18, birthday: null },
+            { student_id: 10, student_name: '陈一', sex: '男', student_age: 18, birthday: '2003-11-01' },
+            { student_id: 11, student_name: '陈二', sex: '男', student_age: 19, birthday: '2002-12-01' },
+            { student_id: 12, student_name: '陈三', sex: '男', student_age: 20, birthday: '2001-10-01' }
+        ];
+
+        // 步骤数据
+        const steps = [
+            {
+                code: "-- 初始数据表",
+                explanation: "初始数据表students，包含7条记录，student_id为自增主键",
+                animation: "showInitialData",
+                successMessage: "✅ 初始数据表已加载，包含7条学生记录。"
+            },
+            {
+                code: "DELETE FROM students WHERE student_age > 19;",
+                explanation: "DELETE语句：删除年龄大于19岁的学生记录，保留表结构和其他数据",
+                animation: "deleteWithCondition",
+                successMessage: "✅ DELETE语句执行成功！删除了年龄大于19岁的学生记录。"
+            },
+            {
+                code: "DELETE FROM students WHERE sex = '男';",
+                explanation: "DELETE语句：删除所有男学生记录，保留表结构和其他数据",
+                animation: "deleteMaleStudents",
+                successMessage: "✅ DELETE语句执行成功！删除了所有男学生记录。"
+            },
+            {
+                code: "DELETE FROM students;",
+                explanation: "DELETE语句：删除所有记录，保留表结构和自增字段当前值",
+                animation: "deleteAllStudents",
+                successMessage: "✅ DELETE语句执行成功！删除了所有学生记录，保留表结构。"
+            },
+            {
+                code: "INSERT INTO students(student_name,sex,birthday) VALUES('王五','女','1990-12-1');",
+                explanation: "INSERT语句：插入新记录，自增字段继续从之前的值开始",
+                animation: "insertAfterDelete",
+                successMessage: "✅ INSERT语句执行成功！新记录的student_id为13，继续之前的自增值。"
+            },
+            {
+                code: "INSERT INTO students(student_name,sex) VALUES('赵六','男');",
+                explanation: "INSERT语句：插入新记录，自增字段继续递增",
+                animation: "insertSecondAfterDelete",
+                successMessage: "✅ INSERT语句执行成功！新记录的student_id为14，继续之前的自增值。"
+            },
+            {
+                code: "-- 重置数据表",
+                explanation: "重置数据表，恢复所有初始数据",
+                animation: "resetTable",
+                successMessage: "✅ 数据表已重置，恢复所有初始数据。"
+            },
+            {
+                code: "TRUNCATE TABLE students;",
+                explanation: "TRUNCATE TABLE语句：清空表数据，保留表结构，重置自增字段",
+                animation: "truncateTable",
+                successMessage: "✅ TRUNCATE TABLE语句执行成功！清空了表数据，保留表结构，重置自增字段。"
+            },
+            {
+                code: "INSERT INTO students(student_name,sex,birthday) VALUES('王五','女','1990-12-1');",
+                explanation: "INSERT语句：插入新记录，自增字段从1开始重新计数",
+                animation: "insertAfterTruncate",
+                successMessage: "✅ INSERT语句执行成功！新记录的student_id为1，自增字段已重置。"
+            },
+            {
+                code: "INSERT INTO students(student_name,sex) VALUES('赵六','男');",
+                explanation: "INSERT语句：插入新记录，自增字段继续递增",
+                animation: "insertSecondAfterTruncate",
+                successMessage: "✅ INSERT语句执行成功！新记录的student_id为2，自增字段已重置。"
+            },
+            {
+                code: "DROP TABLE students;",
+                explanation: "DROP TABLE语句：删除整个表，包括表结构和所有数据",
+                animation: "dropTable",
+                successMessage: "✅ DROP TABLE语句执行成功！删除了整个表，包括表结构和所有数据。"
+            },
+            {
+                code: "-- 演示完成",
+                explanation: "总结：已演示DELETE、TRUNCATE和DROP语句的不同效果",
+                animation: "showCompletion",
+                successMessage: "🎉 演示完成！已成功展示DELETE、TRUNCATE和DROP语句的不同效果。"
+            }
+        ];
+
+        // 当前步骤索引
+        let currentStep = 0;
+        let isPlaying = false;
+        let animationInterval;
+        let stepTimer;
+        let currentData = [...studentData];
+        let nextId = 13; // 用于模拟自增字段的当前值
+
+        // 初始化
+        function init() {
+            renderCodeLines();
+            renderStepIndicators();
+            setupEventListeners();
+            updateControls();
+            setupTableResize();
+            
+            // 初始显示完整数据表格
+            showInitialDataTable();
+        }
+
+        // 显示初始完整数据表格
+        function showInitialDataTable() {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 学生表 - 初始完整数据';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(currentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 数据行 - 显示所有记录
+            currentData.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || 'NULL';
+                    dataCell.classList.add('initial-data-highlight');
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            tableContainer.appendChild(dataTable);
+            
+            // 显示记录数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `总记录数: ${currentData.length}`;
+            tableContainer.appendChild(recordCount);
+            
+            // 显示表结构信息
+            const tableInfo = document.createElement('div');
+            tableInfo.className = 'initial-info';
+            tableInfo.innerHTML = `
+                <strong>表结构信息：</strong> 
+                ${allColumns.length} 个字段，${currentData.length} 条记录
+                <br>
+                <small>字段：${allColumns.join(', ')}</small>
+                <br>
+                <small>注意：student_id 是自增主键，当前最大值为12</small>
+            `;
+            
+            tableAnimation.innerHTML = '';
+            tableAnimation.appendChild(tableInfo);
+            tableAnimation.appendChild(tableContainer);
+        }
+
+        // 渲染代码行
+        function renderCodeLines() {
+            const codeEditor = document.getElementById('code-editor');
+            codeEditor.innerHTML = '';
+            
+            steps.forEach((step, index) => {
+                const codeLine = document.createElement('div');
+                codeLine.className = 'code-line';
+                codeLine.textContent = step.code;
+                codeLine.id = `code-line-${index}`;
+                codeEditor.appendChild(codeLine);
+            });
+        }
+
+        // 渲染步骤指示器
+        function renderStepIndicators() {
+            const stepIndicators = document.getElementById('step-indicators');
+            stepIndicators.innerHTML = '';
+            
+            steps.forEach((_, index) => {
+                const indicator = document.createElement('div');
+                indicator.className = 'step-indicator';
+                indicator.textContent = `步骤 ${index + 1}`;
+                indicator.id = `step-indicator-${index}`;
+                stepIndicators.appendChild(indicator);
+            });
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            document.getElementById('play-btn').addEventListener('click', playAnimation);
+            document.getElementById('pause-btn').addEventListener('click', pauseAnimation);
+            document.getElementById('prev-btn').addEventListener('click', prevStep);
+            document.getElementById('next-btn').addEventListener('click', nextStep);
+            document.getElementById('reset-btn').addEventListener('click', resetAnimation);
+        }
+
+        // 设置表格列宽调整功能
+        function setupTableResize() {
+            document.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('resize-handle')) {
+                    const cell = e.target.parentElement;
+                    const startX = e.pageX;
+                    const startWidth = parseInt(document.defaultView.getComputedStyle(cell).width, 10);
+                    
+                    function doDrag(e) {
+                        cell.style.width = (startWidth + e.pageX - startX) + 'px';
+                    }
+                    
+                    function stopDrag() {
+                        document.documentElement.removeEventListener('mousemove', doDrag, false);
+                        document.documentElement.removeEventListener('mouseup', stopDrag, false);
+                    }
+                    
+                    document.documentElement.addEventListener('mousemove', doDrag, false);
+                    document.documentElement.addEventListener('mouseup', stopDrag, false);
+                }
+            });
+        }
+
+        // 播放动画
+        function playAnimation() {
+            if (currentStep >= steps.length) {
+                resetAnimation();
+            }
+            
+            isPlaying = true;
+            updateControls();
+            
+            // 执行当前步骤
+            executeStep(currentStep);
+            
+            // 设置定时器执行后续步骤
+            animationInterval = setInterval(() => {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    executeStep(currentStep);
+                } else {
+                    pauseAnimation();
+                }
+            }, 4000);
+        }
+
+        // 暂停动画
+        function pauseAnimation() {
+            isPlaying = false;
+            clearInterval(animationInterval);
+            updateControls();
+        }
+
+        // 上一步
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                executeStep(currentStep);
+            }
+            updateControls();
+        }
+
+        // 下一步
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                executeStep(currentStep);
+            }
+            updateControls();
+        }
+
+        // 重置动画
+        function resetAnimation() {
+            pauseAnimation();
+            currentStep = 0;
+            currentData = [...studentData];
+            nextId = 13;
+            updateProgress();
+            updateStepIndicators();
+            updateCodeLines();
+            updateControls();
+            showInitialDataTable();
+            
+            const stepExplanation = document.getElementById('step-explanation');
+            stepExplanation.textContent = "点击'开始演示'按钮查看DROP/TRUNCATE/DELETE语句的完整执行过程";
+            
+            const successMessage = document.getElementById('success-message');
+            successMessage.style.display = 'none';
+            
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.style.display = 'none';
+        }
+
+        // 执行步骤
+        function executeStep(stepIndex) {
+            pauseAnimation();
+            updateProgress();
+            updateStepIndicators();
+            updateCodeLines();
+            
+            const step = steps[stepIndex];
+            const stepExplanation = document.getElementById('step-explanation');
+            stepExplanation.textContent = step.explanation;
+            
+            // 执行动画
+            if (typeof window[step.animation] === 'function') {
+                window[step.animation]();
+            }
+            
+            // 显示成功消息
+            const successMessage = document.getElementById('success-message');
+            successMessage.textContent = step.successMessage;
+            successMessage.style.display = 'block';
+            
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.style.display = 'none';
+            
+            updateControls();
+        }
+
+        // 更新进度条
+        function updateProgress() {
+            const progress = document.getElementById('progress');
+            const progressPercentage = (currentStep / (steps.length - 1)) * 100;
+            progress.style.width = `${progressPercentage}%`;
+        }
+
+        // 更新步骤指示器
+        function updateStepIndicators() {
+            steps.forEach((_, index) => {
+                const indicator = document.getElementById(`step-indicator-${index}`);
+                if (index === currentStep) {
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
+                }
+            });
+        }
+
+        // 更新代码行
+        function updateCodeLines() {
+            steps.forEach((_, index) => {
+                const codeLine = document.getElementById(`code-line-${index}`);
+                if (index === currentStep) {
+                    codeLine.classList.add('active');
+                } else if (index < currentStep) {
+                    codeLine.classList.remove('active');
+                    codeLine.classList.add('completed');
+                } else {
+                    codeLine.classList.remove('active');
+                    codeLine.classList.remove('completed');
+                }
+            });
+        }
+
+        // 更新控制按钮状态
+        function updateControls() {
+            document.getElementById('prev-btn').disabled = currentStep === 0 || isPlaying;
+            document.getElementById('next-btn').disabled = currentStep === steps.length - 1 || isPlaying;
+            document.getElementById('play-btn').disabled = isPlaying || currentStep === steps.length - 1;
+            document.getElementById('pause-btn').disabled = !isPlaying;
+        }
+
+        // 动画函数
+        function showInitialData() {
+            showInitialDataTable();
+        }
+
+        function deleteWithCondition() {
+            // 删除年龄大于19岁的记录
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 学生表 - 删除年龄>19的记录';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(currentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 数据行 - 显示所有记录，高亮要删除的记录
+            currentData.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || 'NULL';
+                    
+                    // 高亮年龄大于19的记录
+                    if (row.student_age > 19) {
+                        dataCell.classList.add('danger-highlight');
+                    } else {
+                        dataCell.classList.add('initial-data-highlight');
+                    }
+                    
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            tableContainer.appendChild(dataTable);
+            
+            // 显示记录数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `总记录数: ${currentData.length}`;
+            tableContainer.appendChild(recordCount);
+            
+            // 显示查询结果
+            const queryResult = document.createElement('div');
+            queryResult.className = 'query-result';
+            queryResult.textContent = 'DELETE FROM students WHERE student_age > 19';
+            tableContainer.appendChild(queryResult);
+            
+            // 显示事务日志
+            const transactionLog = document.createElement('div');
+            transactionLog.className = 'transaction-log';
+            transactionLog.innerHTML = `
+                <strong>事务日志：</strong><br>
+                DELETE操作已记录<br>
+                自增字段当前值: 12
+            `;
+            tableContainer.appendChild(transactionLog);
+            
+            tableAnimation.appendChild(tableContainer);
+            
+            // 更新数据
+            currentData = currentData.filter(row => row.student_age <= 19);
+        }
+
+        function deleteMaleStudents() {
+            // 删除所有男学生记录
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 学生表 - 删除所有男学生记录';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(currentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 数据行 - 显示所有记录，高亮要删除的记录
+            currentData.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || 'NULL';
+                    
+                    // 高亮男学生记录
+                    if (row.sex === '男') {
+                        dataCell.classList.add('danger-highlight');
+                    } else {
+                        dataCell.classList.add('initial-data-highlight');
+                    }
+                    
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            tableContainer.appendChild(dataTable);
+            
+            // 显示记录数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `总记录数: ${currentData.length}`;
+            tableContainer.appendChild(recordCount);
+            
+            // 显示查询结果
+            const queryResult = document.createElement('div');
+            queryResult.className = 'query-result';
+            queryResult.textContent = "DELETE FROM students WHERE sex = '男'";
+            tableContainer.appendChild(queryResult);
+            
+            // 显示事务日志
+            const transactionLog = document.createElement('div');
+            transactionLog.className = 'transaction-log';
+            transactionLog.innerHTML = `
+                <strong>事务日志：</strong><br>
+                DELETE操作已记录<br>
+                自增字段当前值: 12
+            `;
+            tableContainer.appendChild(transactionLog);
+            
+            tableAnimation.appendChild(tableContainer);
+            
+            // 更新数据
+            currentData = currentData.filter(row => row.sex !== '男');
+        }
+
+        function deleteAllStudents() {
+            // 删除所有记录
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 学生表 - DELETE FROM students 执行后';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(currentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 空表提示
+            const emptyTable = document.createElement('div');
+            emptyTable.className = 'empty-table';
+            emptyTable.textContent = '表已清空，无数据';
+            emptyTable.classList.add('warning-highlight');
+            tableBody.appendChild(emptyTable);
+            
+            dataTable.appendChild(tableBody);
+            tableContainer.appendChild(dataTable);
+            
+            // 显示记录数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `总记录数: 0`;
+            tableContainer.appendChild(recordCount);
+            
+            // 显示查询结果
+            const queryResult = document.createElement('div');
+            queryResult.className = 'query-result';
+            queryResult.textContent = 'DELETE FROM students';
+            tableContainer.appendChild(queryResult);
+            
+            // 显示事务日志
+            const transactionLog = document.createElement('div');
+            transactionLog.className = 'transaction-log';
+            transactionLog.innerHTML = `
+                <strong>事务日志：</strong><br>
+                DELETE操作已记录<br>
+                自增字段当前值: 12
+            `;
+            tableContainer.appendChild(transactionLog);
+            
+            tableAnimation.appendChild(tableContainer);
+            
+            // 更新数据
+            currentData = [];
+        }
+
+        function insertAfterDelete() {
+            // 在DELETE后插入记录
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 学生表 - 在DELETE后插入记录';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(studentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 插入新记录
+            const newRecord = {
+                student_id: nextId,
+                student_name: '王五',
+                sex: '女',
+                student_age: 18,
+                birthday: '1990-12-01'
+            };
+            
+            currentData.push(newRecord);
+            
+            // 数据行 - 显示新记录
+            currentData.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || 'NULL';
+                    
+                    // 高亮新插入的记录
+                    if (row.student_id === nextId) {
+                        dataCell.classList.add('new-record-highlight');
+                    }
+                    
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            tableContainer.appendChild(dataTable);
+            
+            // 显示记录数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `总记录数: ${currentData.length}`;
+            tableContainer.appendChild(recordCount);
+            
+            // 显示查询结果
+            const queryResult = document.createElement('div');
+            queryResult.className = 'query-result';
+            queryResult.textContent = 'INSERT INTO students VALUES(...)';
+            tableContainer.appendChild(queryResult);
+            
+            // 显示事务日志
+            const transactionLog = document.createElement('div');
+            transactionLog.className = 'transaction-log';
+            transactionLog.innerHTML = `
+                <strong>事务日志：</strong><br>
+                INSERT操作已记录<br>
+                自增字段当前值: ${nextId}
+            `;
+            tableContainer.appendChild(transactionLog);
+            
+            tableAnimation.appendChild(tableContainer);
+            
+            // 更新自增字段值
+            nextId++;
+        }
+
+        function insertSecondAfterDelete() {
+            // 在DELETE后插入第二条记录
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 学生表 - 在DELETE后插入第二条记录';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(studentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 插入新记录
+            const newRecord = {
+                student_id: nextId,
+                student_name: '赵六',
+                sex: '男',
+                student_age: 18,
+                birthday: null
+            };
+            
+            currentData.push(newRecord);
+            
+            // 数据行 - 显示所有记录
+            currentData.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || 'NULL';
+                    
+                    // 高亮新插入的记录
+                    if (row.student_id === nextId) {
+                        dataCell.classList.add('new-record-highlight');
+                    } else if (row.student_id === nextId - 1) {
+                        dataCell.classList.add('between-highlight');
+                    }
+                    
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            tableContainer.appendChild(dataTable);
+            
+            // 显示记录数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `总记录数: ${currentData.length}`;
+            tableContainer.appendChild(recordCount);
+            
+            // 显示查询结果
+            const queryResult = document.createElement('div');
+            queryResult.className = 'query-result';
+            queryResult.textContent = 'INSERT INTO students VALUES(...)';
+            tableContainer.appendChild(queryResult);
+            
+            // 显示事务日志
+            const transactionLog = document.createElement('div');
+            transactionLog.className = 'transaction-log';
+            transactionLog.innerHTML = `
+                <strong>事务日志：</strong><br>
+                INSERT操作已记录<br>
+                自增字段当前值: ${nextId}
+            `;
+            tableContainer.appendChild(transactionLog);
+            
+            tableAnimation.appendChild(tableContainer);
+            
+            // 更新自增字段值
+            nextId++;
+        }
+
+        function resetTable() {
+            // 重置数据表
+            currentData = [...studentData];
+            nextId = 13;
+            showInitialDataTable();
+        }
+
+        function truncateTable() {
+            // 清空表数据
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 学生表 - TRUNCATE TABLE 执行后';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(currentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 空表提示
+            const emptyTable = document.createElement('div');
+            emptyTable.className = 'empty-table';
+            emptyTable.textContent = '表已清空，无数据';
+            emptyTable.classList.add('warning-highlight');
+            tableBody.appendChild(emptyTable);
+            
+            dataTable.appendChild(tableBody);
+            tableContainer.appendChild(dataTable);
+            
+            // 显示记录数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `总记录数: 0`;
+            tableContainer.appendChild(recordCount);
+            
+            // 显示查询结果
+            const queryResult = document.createElement('div');
+            queryResult.className = 'query-result';
+            queryResult.textContent = 'TRUNCATE TABLE students';
+            tableContainer.appendChild(queryResult);
+            
+            // 显示事务日志
+            const transactionLog = document.createElement('div');
+            transactionLog.className = 'transaction-log';
+            transactionLog.innerHTML = `
+                <strong>事务日志：</strong><br>
+                TRUNCATE操作未记录<br>
+                自增字段已重置为: 1
+            `;
+            tableContainer.appendChild(transactionLog);
+            
+            tableAnimation.appendChild(tableContainer);
+            
+            // 更新数据
+            currentData = [];
+            // 重置自增字段
+            nextId = 1;
+        }
+
+        function insertAfterTruncate() {
+            // 在TRUNCATE后插入记录
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 学生表 - 在TRUNCATE后插入记录';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(studentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 插入新记录
+            const newRecord = {
+                student_id: nextId,
+                student_name: '王五',
+                sex: '女',
+                student_age: 18,
+                birthday: '1990-12-01'
+            };
+            
+            currentData.push(newRecord);
+            
+            // 数据行 - 显示新记录
+            currentData.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || 'NULL';
+                    
+                    // 高亮新插入的记录
+                    if (row.student_id === nextId) {
+                        dataCell.classList.add('new-record-highlight');
+                    }
+                    
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            tableContainer.appendChild(dataTable);
+            
+            // 显示记录数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `总记录数: ${currentData.length}`;
+            tableContainer.appendChild(recordCount);
+            
+            // 显示查询结果
+            const queryResult = document.createElement('div');
+            queryResult.className = 'query-result';
+            queryResult.textContent = 'INSERT INTO students VALUES(...)';
+            tableContainer.appendChild(queryResult);
+            
+            // 显示事务日志
+            const transactionLog = document.createElement('div');
+            transactionLog.className = 'transaction-log';
+            transactionLog.innerHTML = `
+                <strong>事务日志：</strong><br>
+                INSERT操作已记录<br>
+                自增字段当前值: ${nextId}
+            `;
+            tableContainer.appendChild(transactionLog);
+            
+            tableAnimation.appendChild(tableContainer);
+            
+            // 更新自增字段值
+            nextId++;
+        }
+
+        function insertSecondAfterTruncate() {
+            // 在TRUNCATE后插入第二条记录
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 学生表 - 在TRUNCATE后插入第二条记录';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(studentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 插入新记录
+            const newRecord = {
+                student_id: nextId,
+                student_name: '赵六',
+                sex: '男',
+                student_age: 18,
+                birthday: null
+            };
+            
+            currentData.push(newRecord);
+            
+            // 数据行 - 显示所有记录
+            currentData.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || 'NULL';
+                    
+                    // 高亮新插入的记录
+                    if (row.student_id === nextId) {
+                        dataCell.classList.add('new-record-highlight');
+                    } else if (row.student_id === nextId - 1) {
+                        dataCell.classList.add('between-highlight');
+                    }
+                    
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            tableContainer.appendChild(dataTable);
+            
+            // 显示记录数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `总记录数: ${currentData.length}`;
+            tableContainer.appendChild(recordCount);
+            
+            // 显示查询结果
+            const queryResult = document.createElement('div');
+            queryResult.className = 'query-result';
+            queryResult.textContent = 'INSERT INTO students VALUES(...)';
+            tableContainer.appendChild(queryResult);
+            
+            // 显示事务日志
+            const transactionLog = document.createElement('div');
+            transactionLog.className = 'transaction-log';
+            transactionLog.innerHTML = `
+                <strong>事务日志：</strong><br>
+                INSERT操作已记录<br>
+                自增字段当前值: ${nextId}
+            `;
+            tableContainer.appendChild(transactionLog);
+            
+            tableAnimation.appendChild(tableContainer);
+            
+            // 更新自增字段值
+            nextId++;
+        }
+
+        function dropTable() {
+            // 删除整个表
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table table-dropped';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'students 学生表 - DROP TABLE 执行后';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 空表提示
+            const emptyTable = document.createElement('div');
+            emptyTable.className = 'empty-table';
+            emptyTable.textContent = '表已被删除，结构和数据都不存在';
+            emptyTable.classList.add('danger-highlight');
+            tableBody.appendChild(emptyTable);
+            
+            dataTable.appendChild(tableBody);
+            tableContainer.appendChild(dataTable);
+            
+            // 显示查询结果
+            const queryResult = document.createElement('div');
+            queryResult.className = 'query-result';
+            queryResult.textContent = 'DROP TABLE students';
+            tableContainer.appendChild(queryResult);
+            
+            tableAnimation.appendChild(tableContainer);
+            
+            // 更新数据
+            currentData = [];
+        }
+
+        function showCompletion() {
+            // 显示完成信息
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            const completionMessage = document.createElement('div');
+            completionMessage.className = 'empty-table';
+            completionMessage.style.fontSize = '1.5rem';
+            completionMessage.style.color = '#4fc3f7';
+            completionMessage.innerHTML = `
+                <h2>演示完成！</h2>
+                <p>已成功展示 DROP、TRUNCATE 和 DELETE 语句的不同效果</p>
+                <div style="margin-top: 20px; text-align: left; font-size: 1rem;">
+                    <p><strong>总结：</strong></p>
+                    <ul>
+                        <li><strong>DELETE</strong> - 删除数据，保留表结构，可指定条件，记录事务操作，自增字段继续递增</li>
+                        <li><strong>TRUNCATE</strong> - 清空表数据，保留表结构，不记录事务操作，重置自增字段</li>
+                        <li><strong>DROP</strong> - 删除整个表，包括表结构和所有数据</li>
+                    </ul>
+                </div>
+            `;
+            
+            tableAnimation.appendChild(completionMessage);
+        }
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

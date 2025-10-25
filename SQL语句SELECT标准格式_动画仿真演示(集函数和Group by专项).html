@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL SELECT 集函数与分组查询动画演示 - 学生表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2a4d8e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            padding: clamp(12px, 3vw, 20px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 2px solid #4fc3f7;
+        }
+
+        .header h1 {
+            font-size: clamp(1.3rem, 4vw, 2.2rem);
+            margin-bottom: 8px;
+            color: #4fc3f7;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        .header p {
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .code-section {
+            flex: 1;
+            padding: clamp(8px, 1.5vw, 15px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 20, 40, 0.8);
+            border-right: 1px solid rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .code-section {
+                border-right: none;
+                border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+            }
+        }
+
+        .syntax-format {
+            background: linear-gradient(135deg, #0d1b2a, #1e3a5f);
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            margin-bottom: 12px;
+            border: 2px solid #4fc3f7;
+            box-shadow: 
+                0 0 15px rgba(79, 195, 247, 0.4),
+                inset 0 0 15px rgba(79, 195, 247, 0.1);
+            position: relative;
+            overflow: hidden;
+            flex: 0 0 40%;
+            overflow-y: auto;
+        }
+
+        .syntax-format::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            animation: shimmer 3s infinite;
+        }
+
+        .syntax-title {
+            color: #4fc3f7;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
+        }
+
+        .syntax-line {
+            margin-bottom: 4px;
+            padding: 6px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            border-radius: 6px;
+            background: rgba(79, 195, 247, 0.15);
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            line-height: 1.3;
+        }
+
+        .syntax-line:hover {
+            background: rgba(79, 195, 247, 0.25);
+            transform: translateX(3px);
+        }
+
+        .syntax-comment {
+            color: #a8d8ff;
+            font-style: italic;
+            margin-left: 8px;
+            font-size: clamp(0.7rem, 1.3vw, 0.8rem);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .required {
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        .optional {
+            color: #ffb74d;
+        }
+
+        .code-editor {
+            flex: 1;
+            background: #0d1b2a;
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            overflow: auto;
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.3);
+        }
+
+        .code-line {
+            margin-bottom: 6px;
+            padding: 6px 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            background: rgba(255, 255, 255, 0.05);
+            line-height: 1.3;
+        }
+
+        .code-line.active {
+            background: rgba(79, 195, 247, 0.2);
+            border-left: 3px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .code-line.completed {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 3px solid #4caf50;
+        }
+
+        .animation-section {
+            flex: 1;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 30, 60, 0.6);
+            overflow: hidden;
+        }
+
+        .animation-section h2 {
+            margin-bottom: 12px;
+            color: #4fc3f7;
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+        }
+
+        .animation-container {
+            flex: 1;
+            background: rgba(13, 27, 42, 0.7);
+            border-radius: 10px;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .step-explanation {
+            margin-top: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(0, 30, 60, 0.9), rgba(0, 50, 100, 0.9));
+            border-radius: 8px;
+            border-left: 4px solid #4fc3f7;
+            width: 95%;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: clamp(12px, 2vw, 20px);
+            gap: clamp(8px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-top: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .btn {
+            padding: clamp(8px, 2vw, 12px) clamp(15px, 3vw, 25px);
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            color: white;
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #1976d2, #1e88e5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #546e7a;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-container {
+            padding: clamp(10px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            background-size: 200% 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+            animation: progressShimmer 2s infinite;
+        }
+
+        .step-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+        }
+
+        .step-indicator {
+            padding: 6px 12px;
+            border-radius: 15px;
+            background: rgba(79, 195, 247, 0.2);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .step-indicator.active {
+            background: #4fc3f7;
+            color: #0d1b2a;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            transform: scale(1.1);
+        }
+
+        /* 动画关键帧 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes progressShimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(79, 195, 247, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
+            color: #4caf50;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.3));
+            color: #f44336;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            box-shadow: 0 0 8px rgba(244, 67, 54, 0.3);
+        }
+
+        .format-key {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 6px;
+            text-align: center;
+            line-height: 14px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .required-key {
+            background: #4fc3f7;
+            color: white;
+        }
+
+        .optional-key {
+            background: #ffb74d;
+            color: white;
+        }
+        
+        /* 数据表格样式 */
+        .data-table-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+        }
+        
+        .data-table {
+            width: 95%;
+            height: 90%;
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        
+        .table-header {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.5vw, 1rem);
+            flex-shrink: 0;
+        }
+        
+        .table-body {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .table-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 10px;
+            font-size: clamp(0.7rem, 1.3vw, 0.85rem);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+        
+        .data-cell {
+            flex: 1;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 4px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            min-width: 60px;
+        }
+        
+        .data-cell:last-child {
+            border-right: none;
+        }
+        
+        .highlight {
+            background-color: rgba(255, 255, 255, 0.3);
+            animation: highlight 1.5s ease;
+        }
+        
+        @keyframes highlight {
+            0% { background-color: rgba(255, 255, 255, 0); }
+            50% { background-color: rgba(255, 255, 255, 0.5); }
+            100% { background-color: rgba(255, 255, 255, 0.3); }
+        }
+        
+        .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background-color: rgba(255, 255, 255, 0.3);
+            cursor: col-resize;
+        }
+        
+        .resize-handle:hover {
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+        
+        /* 小屏幕适配 */
+        @media (max-width: 768px) {
+            .table-row {
+                padding: 4px 6px;
+                font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+            }
+            
+            .data-cell {
+                padding: 0 2px;
+            }
+        }
+        
+        /* 超小屏幕适配 */
+        @media (max-width: 480px) {
+            .table-row {
+                padding: 3px 4px;
+                font-size: clamp(0.5rem, 1vw, 0.65rem);
+            }
+            
+            .data-cell {
+                padding: 0 1px;
+            }
+        }
+        
+        .query-result {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #4fc3f7;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .data-flow {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff5722;
+            border-radius: 50%;
+            animation: dataFlow 2s ease-in-out;
+        }
+        
+        @keyframes dataFlow {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(150px, 0); opacity: 0; }
+        }
+        
+        .record-count {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #4fc3f7;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .between-highlight {
+            background-color: rgba(76, 175, 80, 0.3);
+            animation: betweenHighlight 2s ease-in-out;
+        }
+        
+        @keyframes betweenHighlight {
+            0% { background-color: rgba(76, 175, 80, 0); }
+            50% { background-color: rgba(76, 175, 80, 0.5); }
+            100% { background-color: rgba(76, 175, 80, 0.3); }
+        }
+        
+        .function-highlight {
+            background-color: rgba(255, 152, 0, 0.3);
+            animation: functionHighlight 2s ease-in-out;
+        }
+        
+        @keyframes functionHighlight {
+            0% { background-color: rgba(255, 152, 0, 0); }
+            50% { background-color: rgba(255, 152, 0, 0.5); }
+            100% { background-color: rgba(255, 152, 0, 0.3); }
+        }
+        
+        .group-highlight {
+            background-color: rgba(156, 39, 176, 0.3);
+            animation: groupHighlight 2s ease-in-out;
+        }
+        
+        @keyframes groupHighlight {
+            0% { background-color: rgba(156, 39, 176, 0); }
+            50% { background-color: rgba(156, 39, 176, 0.5); }
+            100% { background-color: rgba(156, 39, 176, 0.3); }
+        }
+        
+        .executed-query {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #4fc3f7;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .initial-data {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #4fc3f7;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SQL SELECT 集函数与分组查询动画演示 - 学生表</h1>
+            <p>通过分步动画演示SELECT语句中的集函数、GROUP BY与HAVING子句功能</p>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="step-indicators" id="step-indicators">
+                <!-- 步骤指示器将通过JS动态生成 -->
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="code-section">
+                <!-- 紧凑的标准格式 -->
+                <div class="syntax-format">
+                    <div class="syntax-title">📋 SELECT 集函数与分组查询格式</div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">SELECT</span>
+                        <span class="optional">[DISTINCT]</span>
+                        <span class="required">column1, column2, ...</span>
+                        <span class="syntax-comment"># 选择列</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">FROM table_name</span>
+                        <span class="syntax-comment"># 数据来源</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[WHERE condition]</span>
+                        <span class="syntax-comment"># 筛选条件</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[GROUP BY column]</span>
+                        <span class="syntax-comment"># 分组</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[HAVING condition]</span>
+                        <span class="syntax-comment"># 分组后筛选</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[ORDER BY column [ASC|DESC]]</span>
+                        <span class="syntax-comment"># 排序</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[LIMIT number]</span>
+                        <span class="syntax-comment"># 限制结果数量</span>
+                    </div>
+                    <div class="syntax-line" style="margin-top: 10px; background: rgba(255, 152, 0, 0.2);">
+                        <span class="format-key required-key">F</span>
+                        <span class="required">常用集函数:</span>
+                        <span class="syntax-comment">COUNT(), SUM(), AVG(), MAX(), MIN()</span>
+                    </div>
+                </div>
+                
+                <div class="code-editor" id="code-editor">
+                    <!-- 代码行将通过JS动态生成 -->
+                </div>
+            </div>
+            
+            <div class="animation-section">
+                <h2>动画演示</h2>
+                <div class="animation-container">
+                    <div class="table-animation" id="table-animation">
+                        <!-- 动画元素将通过JS动态生成 -->
+                    </div>
+                    <div class="step-explanation" id="step-explanation">
+                        点击"开始演示"按钮查看SELECT语句中集函数与分组查询的完整执行过程
+                    </div>
+                    <div class="success-message" id="success-message"></div>
+                    <div class="error-message" id="error-message"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="prev-btn" disabled>上一步</button>
+            <button class="btn" id="play-btn">开始演示</button>
+            <button class="btn" id="pause-btn" disabled>暂停</button>
+            <button class="btn" id="next-btn" disabled>下一步</button>
+            <button class="btn" id="reset-btn">重置</button>
+        </div>
+    </div>
+
+    <script>
+        // 示例数据 - 添加成绩字段用于演示SUM函数
+        const studentData = [
+            { S_number: '2009050101', S_name: '丁杰杰', Sex: '男', Birthday: '1997-12-17', BirthPlace: '杭州', Ploitics: '团员', Class_number: '20090501', MobilePhone: '15988880101', Dormitory: '兰101', Score: 85 },
+            { S_number: '2009050102', S_name: '丁圆', Sex: '男', Birthday: '1998-3-28', BirthPlace: '湖州', Ploitics: '团员', Class_number: '20090501', MobilePhone: '15988880102', Dormitory: '兰101', Score: 92 },
+            { S_number: '2009050103', S_name: '范华良', Sex: '男', Birthday: '1999-1-18', BirthPlace: '杭州', Ploitics: '团员', Class_number: '20090501', MobilePhone: '15988880103', Dormitory: '兰101', Score: 78 },
+            { S_number: '2009050104', S_name: '傅霖亮', Sex: '女', Birthday: '1997-12-11', BirthPlace: '宁波', Ploitics: '团员', Class_number: '20090501', MobilePhone: '15988880104', Dormitory: '梅102', Score: 88 },
+            { S_number: '2009050105', S_name: '何平', Sex: '男', Birthday: '1997-12-17', BirthPlace: '宁波', Ploitics: '团员', Class_number: '20090501', MobilePhone: '15988880105', Dormitory: '兰101', Score: 95 },
+            { S_number: '2009050201', S_name: '王海莉', Sex: '女', Birthday: '1998-5-3', BirthPlace: '嘉兴', Ploitics: '党员', Class_number: '20090502', MobilePhone: '15988880106', Dormitory: '梅102', Score: 90 }
+        ];
+
+        // 步骤数据 - 专注于集函数和分组查询
+        const steps = [
+            {
+                code: "-- 初始数据表",
+                explanation: "显示T_Student表的完整数据，包含所有字段和记录",
+                animation: "showInitialData",
+                successMessage: "✅ 初始数据表加载完成！显示了T_Student表的完整结构。"
+            },
+            {
+                code: "SELECT COUNT(*) AS 学生总数 FROM T_Student;",
+                explanation: "COUNT(*) 函数：统计表中的总记录数，包括所有行，无论是否包含NULL值",
+                animation: "showCountFunction",
+                successMessage: "✅ COUNT(*) 函数查询成功！统计了学生表中的总记录数。"
+            },
+            {
+                code: "SELECT COUNT(Sex) AS 性别记录数 FROM T_Student;",
+                explanation: "COUNT(column) 函数：统计指定列中非NULL值的数量",
+                animation: "showCountColumnFunction",
+                successMessage: "✅ COUNT(column) 函数查询成功！统计了性别列中非NULL值的数量。"
+            },
+            {
+                code: "SELECT SUM(Score) AS 总分 FROM T_Student;",
+                explanation: "SUM() 函数：计算数值列的总和，这里计算所有学生的成绩总分",
+                animation: "showSumFunction",
+                successMessage: "✅ SUM() 函数查询成功！计算了所有学生的成绩总分。"
+            },
+            {
+                code: "SELECT AVG(Score) AS 平均分 FROM T_Student;",
+                explanation: "AVG() 函数：计算数值列的平均值，这里计算学生的平均成绩",
+                animation: "showAvgFunction",
+                successMessage: "✅ AVG() 函数查询成功！计算了学生的平均成绩。"
+            },
+            {
+                code: "SELECT MAX(Score) AS 最高分, MIN(Score) AS 最低分 FROM T_Student;",
+                explanation: "MAX() 和 MIN() 函数：分别返回数值列的最大值和最小值",
+                animation: "showMaxMinFunction",
+                successMessage: "✅ MAX() 和 MIN() 函数查询成功！找到了学生中的最高分和最低分。"
+            },
+            {
+                code: "SELECT Sex, COUNT(*) AS 人数 FROM T_Student GROUP BY Sex;",
+                explanation: "GROUP BY 子句：按性别分组统计人数，将相同性别的记录分为一组",
+                animation: "showGroupBy",
+                successMessage: "✅ GROUP BY 分组查询成功！按性别分组统计了男女生人数。"
+            },
+            {
+                code: "SELECT Sex, SUM(Score) AS 总分 FROM T_Student GROUP BY Sex;",
+                explanation: "GROUP BY 与 SUM() 结合：按性别分组统计总分",
+                animation: "showGroupBySum",
+                successMessage: "✅ GROUP BY 与 SUM() 结合查询成功！按性别分组统计了总分。"
+            },
+            {
+                code: "SELECT BirthPlace, COUNT(*) AS 人数 FROM T_Student GROUP BY BirthPlace;",
+                explanation: "GROUP BY 子句：按来源地分组统计人数，将相同来源地的记录分为一组",
+                animation: "showGroupByBirthPlace",
+                successMessage: "✅ GROUP BY 分组查询成功！按来源地分组统计了各地区人数。"
+            },
+            {
+                code: "SELECT Class_number, COUNT(*) AS 人数 FROM T_Student GROUP BY Class_number;",
+                explanation: "GROUP BY 子句：按班级分组统计人数，将相同班级的记录分为一组",
+                animation: "showGroupByClass",
+                successMessage: "✅ GROUP BY 分组查询成功！按班级分组统计了各班级人数。"
+            },
+            {
+                code: "SELECT BirthPlace, COUNT(*) AS 人数 FROM T_Student GROUP BY BirthPlace HAVING COUNT(*) > 1;",
+                explanation: "HAVING 子句：按来源地分组后，筛选出人数大于1的地区",
+                animation: "showHavingClause",
+                successMessage: "✅ HAVING 子句查询成功！筛选出了人数大于1的学生来源地。"
+            },
+            {
+                code: "SELECT Class_number, AVG(Score) AS 平均分 FROM T_Student GROUP BY Class_number HAVING AVG(Score) > 85;",
+                explanation: "HAVING 子句与集函数结合：按班级分组后，筛选出平均分大于85的班级",
+                animation: "showHavingWithFunction",
+                successMessage: "✅ HAVING 子句与集函数结合查询成功！筛选出了平均分大于85的班级。"
+            },
+            {
+                code: "SELECT Ploitics, COUNT(*) AS 人数 FROM T_Student GROUP BY Ploitics ORDER BY COUNT(*) DESC;",
+                explanation: "GROUP BY 与 ORDER BY 结合：按政治面貌分组统计人数，并按人数降序排列",
+                animation: "showGroupByOrderBy",
+                successMessage: "✅ GROUP BY 与 ORDER BY 结合查询成功！按政治面貌分组统计人数并排序。"
+            },
+            {
+                code: "-- 集函数与分组查询演示完成",
+                explanation: "总结：已演示COUNT、SUM、AVG、MAX、MIN等集函数，以及GROUP BY和HAVING子句的使用",
+                animation: "showCompletion",
+                successMessage: "🎉 集函数与分组查询演示完成！已成功展示COUNT、SUM、AVG、MAX、MIN等集函数，以及GROUP BY和HAVING子句的使用。"
+            }
+        ];
+
+        // 当前步骤索引
+        let currentStep = 0;
+        let isPlaying = false;
+        let animationInterval;
+        let stepTimer;
+
+        // 初始化
+        function init() {
+            renderCodeLines();
+            renderStepIndicators();
+            setupEventListeners();
+            updateControls();
+            setupTableResize();
+            // 初始显示完整数据表
+            showInitialData();
+        }
+
+        // 渲染代码行
+        function renderCodeLines() {
+            const codeEditor = document.getElementById('code-editor');
+            codeEditor.innerHTML = '';
+            
+            steps.forEach((step, index) => {
+                const codeLine = document.createElement('div');
+                codeLine.className = 'code-line';
+                codeLine.textContent = step.code;
+                codeLine.id = `code-line-${index}`;
+                codeEditor.appendChild(codeLine);
+            });
+        }
+
+        // 渲染步骤指示器
+        function renderStepIndicators() {
+            const stepIndicators = document.getElementById('step-indicators');
+            stepIndicators.innerHTML = '';
+            
+            steps.forEach((_, index) => {
+                const indicator = document.createElement('div');
+                indicator.className = 'step-indicator';
+                indicator.textContent = `步骤 ${index + 1}`;
+                indicator.id = `step-indicator-${index}`;
+                stepIndicators.appendChild(indicator);
+            });
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            document.getElementById('play-btn').addEventListener('click', playAnimation);
+            document.getElementById('pause-btn').addEventListener('click', pauseAnimation);
+            document.getElementById('prev-btn').addEventListener('click', prevStep);
+            document.getElementById('next-btn').addEventListener('click', nextStep);
+            document.getElementById('reset-btn').addEventListener('click', resetAnimation);
+        }
+
+        // 设置表格列宽调整功能
+        function setupTableResize() {
+            document.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('resize-handle')) {
+                    const cell = e.target.parentElement;
+                    const startX = e.pageX;
+                    const startWidth = parseInt(document.defaultView.getComputedStyle(cell).width, 10);
+                    
+                    function doDrag(e) {
+                        cell.style.width = (startWidth + e.pageX - startX) + 'px';
+                    }
+                    
+                    function stopDrag() {
+                        document.documentElement.removeEventListener('mousemove', doDrag, false);
+                        document.documentElement.removeEventListener('mouseup', stopDrag, false);
+                    }
+                    
+                    document.documentElement.addEventListener('mousemove', doDrag, false);
+                    document.documentElement.addEventListener('mouseup', stopDrag, false);
+                }
+            });
+        }
+
+        // 播放动画
+        function playAnimation() {
+            if (currentStep >= steps.length) {
+                resetAnimation();
+            }
+            
+            isPlaying = true;
+            updateControls();
+            
+            // 设置每步7秒的自动播放
+            animationInterval = setInterval(() => {
+                if (currentStep < steps.length - 1) {
+                    nextStep();
+                } else {
+                    pauseAnimation();
+                }
+            }, 7000);
+        }
+
+        // 暂停动画
+        function pauseAnimation() {
+            isPlaying = false;
+            clearInterval(animationInterval);
+            if (stepTimer) clearTimeout(stepTimer);
+            updateControls();
+        }
+
+        // 下一步
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                updateStep();
+            }
+        }
+
+        // 上一步
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateStep();
+            }
+        }
+
+        // 重置动画
+        function resetAnimation() {
+            pauseAnimation();
+            currentStep = 0;
+            updateStep();
+        }
+
+        // 更新步骤
+        function updateStep() {
+            // 更新进度条
+            const progress = document.getElementById('progress');
+            progress.style.width = `${(currentStep / (steps.length - 1)) * 100}%`;
+            
+            // 更新步骤指示器
+            document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+                if (index === currentStep) {
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
+                }
+            });
+            
+            // 更新代码行高亮
+            document.querySelectorAll('.code-line').forEach((line, index) => {
+                if (index === currentStep) {
+                    line.classList.add('active');
+                    line.classList.remove('completed');
+                } else if (index < currentStep) {
+                    line.classList.remove('active');
+                    line.classList.add('completed');
+                } else {
+                    line.classList.remove('active');
+                    line.classList.remove('completed');
+                }
+            });
+            
+            // 更新步骤说明
+            const stepExplanation = document.getElementById('step-explanation');
+            stepExplanation.textContent = steps[currentStep].explanation;
+            
+            // 执行动画
+            executeAnimation(steps[currentStep].animation);
+            
+            // 更新控制按钮状态
+            updateControls();
+        }
+
+        // 更新控制按钮状态
+        function updateControls() {
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('next-btn').disabled = currentStep === steps.length - 1;
+            document.getElementById('play-btn').disabled = isPlaying;
+            document.getElementById('pause-btn').disabled = !isPlaying;
+        }
+
+        // 执行动画
+        function executeAnimation(animationType) {
+            const tableAnimation = document.getElementById('table-animation');
+            tableAnimation.innerHTML = '';
+            
+            // 显示成功消息
+            const successMessage = document.getElementById('success-message');
+            successMessage.textContent = steps[currentStep].successMessage;
+            successMessage.style.display = 'block';
+            
+            // 隐藏错误消息
+            document.getElementById('error-message').style.display = 'none';
+            
+            // 根据动画类型执行不同的动画
+            switch(animationType) {
+                case 'showInitialData':
+                    showInitialData();
+                    break;
+                case 'showCountFunction':
+                    showCountFunction();
+                    break;
+                case 'showCountColumnFunction':
+                    showCountColumnFunction();
+                    break;
+                case 'showSumFunction':
+                    showSumFunction();
+                    break;
+                case 'showAvgFunction':
+                    showAvgFunction();
+                    break;
+                case 'showMaxMinFunction':
+                    showMaxMinFunction();
+                    break;
+                case 'showGroupBy':
+                    showGroupBy();
+                    break;
+                case 'showGroupBySum':
+                    showGroupBySum();
+                    break;
+                case 'showGroupByBirthPlace':
+                    showGroupByBirthPlace();
+                    break;
+                case 'showGroupByClass':
+                    showGroupByClass();
+                    break;
+                case 'showHavingClause':
+                    showHavingClause();
+                    break;
+                case 'showHavingWithFunction':
+                    showHavingWithFunction();
+                    break;
+                case 'showGroupByOrderBy':
+                    showGroupByOrderBy();
+                    break;
+                case 'showCompletion':
+                    showCompletion();
+                    break;
+            }
+        }
+
+        // 创建数据表格
+        function createDataTable(data, columns, showQueryResult = false, showRecordCount = false, highlightCondition = null) {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'T_Student 学生表';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            columns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 数据行
+            data.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                columns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || '';
+                    
+                    // 高亮符合条件的行
+                    if (highlightCondition && highlightCondition(row)) {
+                        dataCell.classList.add('between-highlight');
+                    }
+                    
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            tableContainer.appendChild(dataTable);
+            
+            // 显示执行代码
+            if (currentStep > 0) {
+                const executedQuery = document.createElement('div');
+                executedQuery.className = 'executed-query';
+                executedQuery.textContent = steps[currentStep].code;
+                tableContainer.appendChild(executedQuery);
+            } else {
+                const initialData = document.createElement('div');
+                initialData.className = 'initial-data';
+                initialData.textContent = '初始数据表';
+                tableContainer.appendChild(initialData);
+            }
+            
+            // 显示查询结果
+            if (showQueryResult) {
+                const queryResult = document.createElement('div');
+                queryResult.className = 'query-result';
+                queryResult.textContent = `查询结果: ${data.length} 条记录`;
+                tableContainer.appendChild(queryResult);
+            }
+            
+            // 显示记录数
+            if (showRecordCount) {
+                const recordCount = document.createElement('div');
+                recordCount.className = 'record-count';
+                recordCount.textContent = `记录数: ${data.length}`;
+                tableContainer.appendChild(recordCount);
+            }
+            
+            tableAnimation.appendChild(tableContainer);
+        }
+
+        // 动画函数实现
+        function showInitialData() {
+            createDataTable(studentData, Object.keys(studentData[0]), true, true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showCountFunction() {
+            const data = [{ 学生总数: studentData.length }];
+            createDataTable(data, ['学生总数'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showCountColumnFunction() {
+            const nonNullCount = studentData.filter(student => student.Sex !== null).length;
+            const data = [{ 性别记录数: nonNullCount }];
+            createDataTable(data, ['性别记录数'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showSumFunction() {
+            const totalScore = studentData.reduce((sum, student) => sum + student.Score, 0);
+            const data = [{ 总分: totalScore }];
+            createDataTable(data, ['总分'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('function-highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showAvgFunction() {
+            const totalScore = studentData.reduce((sum, student) => sum + student.Score, 0);
+            const avgScore = (totalScore / studentData.length).toFixed(2);
+            const data = [{ 平均分: avgScore }];
+            createDataTable(data, ['平均分'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('function-highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showMaxMinFunction() {
+            const scores = studentData.map(student => student.Score);
+            const maxScore = Math.max(...scores);
+            const minScore = Math.min(...scores);
+            const data = [{ 最高分: maxScore, 最低分: minScore }];
+            createDataTable(data, ['最高分', '最低分'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('function-highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showGroupBy() {
+            const groupResult = {};
+            studentData.forEach(student => {
+                if (groupResult[student.Sex]) {
+                    groupResult[student.Sex]++;
+                } else {
+                    groupResult[student.Sex] = 1;
+                }
+            });
+            
+            const data = Object.keys(groupResult).map(sex => ({
+                Sex: sex,
+                人数: groupResult[sex]
+            }));
+            
+            createDataTable(data, ['Sex', '人数'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('group-highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showGroupBySum() {
+            const groupResult = {};
+            studentData.forEach(student => {
+                if (groupResult[student.Sex]) {
+                    groupResult[student.Sex] += student.Score;
+                } else {
+                    groupResult[student.Sex] = student.Score;
+                }
+            });
+            
+            const data = Object.keys(groupResult).map(sex => ({
+                Sex: sex,
+                总分: groupResult[sex]
+            }));
+            
+            createDataTable(data, ['Sex', '总分'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('group-highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showGroupByBirthPlace() {
+            const groupResult = {};
+            studentData.forEach(student => {
+                if (groupResult[student.BirthPlace]) {
+                    groupResult[student.BirthPlace]++;
+                } else {
+                    groupResult[student.BirthPlace] = 1;
+                }
+            });
+            
+            const data = Object.keys(groupResult).map(place => ({
+                BirthPlace: place,
+                人数: groupResult[place]
+            }));
+            
+            createDataTable(data, ['BirthPlace', '人数'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('group-highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showGroupByClass() {
+            const groupResult = {};
+            studentData.forEach(student => {
+                if (groupResult[student.Class_number]) {
+                    groupResult[student.Class_number]++;
+                } else {
+                    groupResult[student.Class_number] = 1;
+                }
+            });
+            
+            const data = Object.keys(groupResult).map(classNum => ({
+                Class_number: classNum,
+                人数: groupResult[classNum]
+            }));
+            
+            createDataTable(data, ['Class_number', '人数'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('group-highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showHavingClause() {
+            const groupResult = {};
+            studentData.forEach(student => {
+                if (groupResult[student.BirthPlace]) {
+                    groupResult[student.BirthPlace]++;
+                } else {
+                    groupResult[student.BirthPlace] = 1;
+                }
+            });
+            
+            const data = Object.keys(groupResult)
+                .filter(place => groupResult[place] > 1)
+                .map(place => ({
+                    BirthPlace: place,
+                    人数: groupResult[place]
+                }));
+                
+            createDataTable(data, ['BirthPlace', '人数'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('group-highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showHavingWithFunction() {
+            const groupResult = {};
+            
+            studentData.forEach(student => {
+                if (groupResult[student.Class_number]) {
+                    groupResult[student.Class_number].totalScore += student.Score;
+                    groupResult[student.Class_number].count++;
+                } else {
+                    groupResult[student.Class_number] = {
+                        totalScore: student.Score,
+                        count: 1
+                    };
+                }
+            });
+            
+            const data = Object.keys(groupResult)
+                .map(classNum => ({
+                    Class_number: classNum,
+                    平均分: (groupResult[classNum].totalScore / groupResult[classNum].count).toFixed(2)
+                }))
+                .filter(item => parseFloat(item.平均分) > 85);
+                
+            createDataTable(data, ['Class_number', '平均分'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('group-highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showGroupByOrderBy() {
+            const groupResult = {};
+            studentData.forEach(student => {
+                if (groupResult[student.Ploitics]) {
+                    groupResult[student.Ploitics]++;
+                } else {
+                    groupResult[student.Ploitics] = 1;
+                }
+            });
+            
+            const data = Object.keys(groupResult)
+                .map(ploitics => ({
+                    Ploitics: ploitics,
+                    人数: groupResult[ploitics]
+                }))
+                .sort((a, b) => b.人数 - a.人数);
+                
+            createDataTable(data, ['Ploitics', '人数'], true);
+            
+            // 高亮所有行
+            setTimeout(() => {
+                document.querySelectorAll('.table-row').forEach((row, index) => {
+                    if (index > 0) { // 跳过表头
+                        row.classList.add('group-highlight');
+                    }
+                });
+            }, 1000);
+        }
+
+        function showCompletion() {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            // 创建总结表格
+            const table = document.createElement('div');
+            table.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = '集函数与分组查询总结';
+            table.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 添加表头行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            const headers = ['功能', '说明', '示例'];
+            headers.forEach(header => {
+                const cell = document.createElement('div');
+                cell.className = 'data-cell';
+                cell.textContent = header;
+                cell.style.fontWeight = 'bold';
+                cell.style.background = 'rgba(0, 0, 0, 0.2)';
+                headerRow.appendChild(cell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 添加总结行
+            const summaryData = [
+                { function: 'COUNT()', description: '统计记录数或非NULL值数量', example: 'COUNT(*), COUNT(Sex)' },
+                { function: 'SUM()', description: '计算数值列的总和', example: 'SUM(Score)' },
+                { function: 'AVG()', description: '计算数值列的平均值', example: 'AVG(Score)' },
+                { function: 'MAX()/MIN()', description: '返回数值列的最大/最小值', example: 'MAX(Score), MIN(Score)' },
+                { function: 'GROUP BY', description: '按指定列分组统计', example: 'GROUP BY Sex, BirthPlace' },
+                { function: 'HAVING', description: '对分组结果进行筛选', example: 'HAVING COUNT(*) > 1' }
+            ];
+            
+            summaryData.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'table-row';
+                row.id = `summary-row-${index}`;
+                
+                const values = [item.function, item.description, item.example];
+                values.forEach(value => {
+                    const cell = document.createElement('div');
+                    cell.className = 'data-cell';
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+                
+                tableBody.appendChild(row);
+            });
+            
+            table.appendChild(tableBody);
+            tableAnimation.appendChild(table);
+            
+            // 显示执行代码
+            const executedQuery = document.createElement('div');
+            executedQuery.className = 'executed-query';
+            executedQuery.textContent = steps[currentStep].code;
+            tableAnimation.appendChild(executedQuery);
+            
+            // 高亮总结行
+            setTimeout(() => {
+                summaryData.forEach((_, index) => {
+                    const row = document.getElementById(`summary-row-${index}`);
+                    row.classList.add('highlight');
+                });
+            }, 1000);
+        }
+
+        // 初始化应用
+        window.onload = init;
+    </script>
+</body>
+</html>

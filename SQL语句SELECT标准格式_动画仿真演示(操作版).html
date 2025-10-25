@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL SELECT语句动画演示</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a2a6c, #3498db, #87CEEB);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #1a73e8, #0d47a1);
+            color: white;
+            padding: clamp(12px, 2vw, 20px);
+            text-align: center;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .header h1 {
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .left-panel {
+            flex: 1;
+            padding: clamp(15px, 2vw, 25px);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding: clamp(15px, 2vw, 25px);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e0e0e0;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: #1a73e8;
+            color: white;
+            box-shadow: 0 0 10px rgba(26, 115, 232, 0.7);
+            animation: pulse 1.5s infinite;
+        }
+
+        .step.completed {
+            background: #0f9d58;
+            color: white;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #1a73e8, #0d47a1);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .step-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .step-title {
+            font-size: clamp(1.2rem, 2vw, 1.6rem);
+            margin-bottom: 15px;
+            color: #1a73e8;
+            font-weight: 600;
+        }
+
+        .step-description {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            color: #555;
+        }
+
+        .code-editor {
+            background: #282c34;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #abb2bf;
+            font-size: 0.9rem;
+        }
+
+        .code-area {
+            flex: 1;
+            background: #1e2227;
+            border-radius: 5px;
+            padding: 15px;
+            overflow: auto;
+            position: relative;
+        }
+
+        .code-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #abb2bf;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            position: relative;
+            z-index: 2;
+        }
+
+        .code-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .hint {
+            background: #e3f2fd;
+            border-left: 4px solid #1a73e8;
+            padding: 10px 15px;
+            margin-top: 10px;
+            border-radius: 0 5px 5px 0;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+
+        .sql-example {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 12px;
+            margin-top: 10px;
+            border-left: 4px solid #1a73e8;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+
+        .animation-area {
+            flex: 1;
+            background: #f5f9ff;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e1f5fe;
+            animation: glow 2s infinite alternate;
+        }
+
+        .animation-title {
+            text-align: center;
+            font-size: clamp(1.2rem, 2vw, 1.6rem);
+            margin-bottom: 15px;
+            color: #0d47a1;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-prev {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-next {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-validate {
+            background: #4caf50;
+            color: white;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            background: #e0e0e0;
+            color: #9e9e9e;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(26, 115, 232, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05); }
+            100% { box-shadow: 0 5px 20px rgba(33, 150, 243, 0.3); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 表格样式 */
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            margin-top: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            background: white;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .data-table th {
+            background: #1a73e8;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table tr:nth-child(even) {
+            background: #f5f9ff;
+        }
+
+        .data-table tr:hover {
+            background: #e3f2fd;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .table-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0d47a1;
+        }
+
+        .table-stats {
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .highlight-row {
+            animation: highlight 2s ease;
+        }
+
+        @keyframes highlight {
+            0% { background-color: #fff9c4; }
+            100% { background-color: transparent; }
+        }
+
+        .code-validation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .code-validation.active {
+            opacity: 1;
+        }
+
+        .validation-success {
+            background: linear-gradient(90deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.2));
+            animation: successGlow 1.5s ease;
+        }
+
+        .validation-error {
+            background: linear-gradient(90deg, rgba(244, 67, 54, 0.1), rgba(244, 67, 54, 0.2));
+            animation: errorShake 0.5s ease;
+        }
+
+        @keyframes successGlow {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            50% { box-shadow: 0 0 20px 10px rgba(76, 175, 80, 0.3); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .typing-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: typing 2s infinite;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .typing-animation.active {
+            opacity: 1;
+        }
+
+        @keyframes typing {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .syntax-highlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .validation-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff3e0;
+            border-radius: 5px;
+            border-left: 4px solid #ff9800;
+            font-size: 0.85rem;
+            color: #e65100;
+        }
+
+        .validation-details ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .validation-details li {
+            margin-bottom: 3px;
+        }
+
+        /* 标准语句格式样式 */
+        .syntax-guide {
+            background: #f0f7ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #bbdefb;
+        }
+
+        .syntax-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1565c0;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .syntax-structure {
+            background: #e3f2fd;
+            border-radius: 5px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #0d47a1;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .syntax-keyword {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+
+        .syntax-parameter {
+            color: #388e3c;
+            font-weight: bold;
+        }
+
+        .syntax-optional {
+            color: #7b1fa2;
+            font-style: italic;
+        }
+
+        .syntax-explanation {
+            font-size: 0.85rem;
+            color: #546e7a;
+            line-height: 1.5;
+        }
+
+        .syntax-explanation ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .syntax-explanation li {
+            margin-bottom: 3px;
+        }
+
+        .table-structure {
+            background: #e8f5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #4caf50;
+        }
+
+        .table-structure-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .constraint-info {
+            font-size: 0.8rem;
+            color: #555;
+            margin-top: 5px;
+        }
+
+        .constraint-primary {
+            color: #d32f2f;
+        }
+
+        .constraint-default {
+            color: #7b1fa2;
+        }
+
+        .constraint-auto {
+            color: #1976d2;
+        }
+        
+        .query-result {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .query-result-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2e7d32;
+        }
+        
+        .query-result-content {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .distinct-highlight {
+            background-color: #e8f5e9 !important;
+            animation: distinctHighlight 2s ease;
+        }
+        
+        @keyframes distinctHighlight {
+            0% { background-color: #c8e6c9; }
+            100% { background-color: #e8f5e9; }
+        }
+        
+        .alias-highlight {
+            background-color: #e3f2fd !important;
+            animation: aliasHighlight 2s ease;
+        }
+        
+        @keyframes aliasHighlight {
+            0% { background-color: #bbdefb; }
+            100% { background-color: #e3f2fd; }
+        }
+        
+        .in-highlight {
+            background-color: #fff3e0 !important;
+            animation: inHighlight 2s ease;
+        }
+        
+        @keyframes inHighlight {
+            0% { background-color: #ffe0b2; }
+            100% { background-color: #fff3e0; }
+        }
+        
+        .between-highlight {
+            background-color: #fce4ec !important;
+            animation: betweenHighlight 2s ease;
+        }
+        
+        @keyframes betweenHighlight {
+            0% { background-color: #f8bbd9; }
+            100% { background-color: #fce4ec; }
+        }
+        
+        .age-highlight {
+            background-color: #e0f2f1 !important;
+            animation: ageHighlight 2s ease;
+        }
+        
+        @keyframes ageHighlight {
+            0% { background-color: #b2dfdb; }
+            100% { background-color: #e0f2f1; }
+        }
+        
+        .group-highlight {
+            background-color: #fff8e1 !important;
+            animation: groupHighlight 2s ease;
+        }
+        
+        @keyframes groupHighlight {
+            0% { background-color: #ffecb3; }
+            100% { background-color: #fff8e1; }
+        }
+        
+        .having-highlight {
+            background-color: #e8eaf6 !important;
+            animation: havingHighlight 2s ease;
+        }
+        
+        @keyframes havingHighlight {
+            0% { background-color: #c5cae9; }
+            100% { background-color: #e8eaf6; }
+        }
+        
+        .aggregate-function {
+            font-weight: bold;
+            color: #d32f2f;
+        }
+        
+        .grouping-explanation {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f3e5f5;
+            border-radius: 5px;
+            border-left: 4px solid #9c27b0;
+            font-size: 0.85rem;
+        }
+        
+        .grouping-explanation h4 {
+            color: #7b1fa2;
+            margin-bottom: 5px;
+        }
+        
+        .group-visualization {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .group-box {
+            padding: 8px 12px;
+            background: #e1f5fe;
+            border-radius: 5px;
+            border: 2px solid #4fc3f7;
+            font-size: 0.8rem;
+        }
+        
+        .group-box.highlight {
+            background: #fff9c4;
+            border-color: #ffd54f;
+            animation: groupBoxHighlight 1.5s ease;
+        }
+        
+        @keyframes groupBoxHighlight {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SQL SELECT语句动画演示</h1>
+            <p>SELECT语句类型与效果 - 交互式学习体验</p>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+        
+        <div class="content">
+            <div class="left-panel">
+                <div class="step-indicator">
+                    <div class="step active" id="step1">1</div>
+                    <div class="step" id="step2">2</div>
+                    <div class="step" id="step3">3</div>
+                    <div class="step" id="step4">4</div>
+                    <div class="step" id="step5">5</div>
+                    <div class="step" id="step6">6</div>
+                    <div class="step" id="step7">7</div>
+                    <div class="step" id="step8">8</div>
+                    <div class="step" id="step9">9</div>
+                    <div class="step" id="step10">10</div>
+                    <div class="step" id="step11">11</div>
+                </div>
+                
+                <div class="step-content">
+                    <h2 class="step-title" id="stepTitle">步骤1: 基本查询</h2>
+                    <p class="step-description" id="stepDescription">使用SELECT * 查询所有列，FROM指定数据来源表。这是最简单的SELECT语句形式。</p>
+                    
+                    <div class="code-editor">
+                        <div class="code-header">
+                            <span>SQL 编辑器</span>
+                            <span>MySQL</span>
+                        </div>
+                        <div class="code-area">
+                            <textarea class="code-input" id="codeInput" placeholder="在此输入SQL语句..."></textarea>
+                            <div class="code-background">
+                                <div class="code-validation" id="codeValidation"></div>
+                                <div class="typing-animation" id="typingAnimation"></div>
+                                <div class="syntax-highlight" id="syntaxHighlight"></div>
+                            </div>
+                        </div>
+                        <div class="hint" id="hint">提示：使用SELECT * FROM table_name查询所有列</div>
+                        <div class="sql-example" id="sqlExample">示例：SELECT * FROM students;</div>
+                    </div>
+                    
+                    <div class="success-message" id="successMessage">✓ 正确！SQL语句执行成功。</div>
+                    <div class="error-message" id="errorMessage">✗ 错误！请检查SQL语句是否正确。</div>
+                    <div class="validation-details" id="validationDetails" style="display: none;"></div>
+                    
+                    <div class="controls">
+                        <button class="btn btn-prev" id="prevBtn" disabled>上一步</button>
+                        <button class="btn btn-validate" id="validateBtn">验证SQL</button>
+                        <button class="btn btn-next" id="nextBtn" disabled>下一步</button>
+                        <button class="btn btn-reset" id="resetBtn">重置</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <!-- 标准语句格式区域 -->
+                <div class="syntax-guide">
+                    <div class="syntax-title">SELECT 标准语句格式</div>
+                    <div class="syntax-structure">
+                        <span class="syntax-keyword">SELECT</span> <span class="syntax-parameter">column1</span>, <span class="syntax-parameter">column2</span>, ...<br>
+                        <span class="syntax-keyword">FROM</span> <span class="syntax-parameter">table_name</span><br>
+                        <span class="syntax-optional">[WHERE condition]</span><br>
+                        <span class="syntax-optional">[GROUP BY column]</span><br>
+                        <span class="syntax-optional">[HAVING condition]</span><br>
+                        <span class="syntax-optional">[ORDER BY column [ASC|DESC]]</span><br>
+                        <span class="syntax-optional">[LIMIT number]</span>;
+                    </div>
+                    <div class="syntax-explanation">
+                        <strong>参数说明：</strong>
+                        <ul>
+                            <li><span class="syntax-keyword">SELECT</span> - 选择数据的关键字</li>
+                            <li><span class="syntax-parameter">column1, column2, ...</span> - 要查询的列名，使用*表示所有列</li>
+                            <li><span class="syntax-keyword">FROM</span> - 指定数据来源表</li>
+                            <li><span class="syntax-optional">WHERE</span> - 筛选条件（可选）</li>
+                            <li><span class="syntax-optional">GROUP BY</span> - 分组（可选）</li>
+                            <li><span class="syntax-optional">HAVING</span> - 分组后筛选（可选）</li>
+                            <li><span class="syntax-optional">ORDER BY</span> - 排序（可选）</li>
+                            <li><span class="syntax-optional">LIMIT</span> - 限制结果数量（可选）</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 表结构信息 -->
+                <div class="table-structure">
+                    <div class="table-structure-title">students表结构</div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        <tr>
+                            <th style="padding: 8px; text-align: left; background: #4caf50; color: white;">列名</th>
+                            <th style="padding: 8px; text-align: left; background: #4caf50; color: white;">数据类型</th>
+                            <th style="padding: 8px; text-align: left; background: #4caf50; color: white;">约束</th>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">student_id</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">INT</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">
+                                <span class="constraint-primary">PRIMARY KEY</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">student_name</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">VARCHAR(50)</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">NOT NULL</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">sex</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">CHAR(2)</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">NOT NULL</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">student_age</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">INT</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">
+                                <span class="constraint-default">DEFAULT 18</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">birthday</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">DATE</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">NULL</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">city</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">VARCHAR(20)</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">NULL</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">score</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">INT</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">NULL</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="animation-area">
+                    <h3 class="animation-title" id="animationTitle">查询结果</h3>
+                    
+                    <div class="table-header">
+                        <div class="table-title">students表数据</div>
+                        <div class="table-stats" id="tableStats">0 行数据</div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table" id="dataTable">
+                            <thead>
+                                <tr>
+                                    <th>student_id</th>
+                                    <th>student_name</th>
+                                    <th>sex</th>
+                                    <th>student_age</th>
+                                    <th>birthday</th>
+                                    <th>city</th>
+                                    <th>score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- 表格数据将通过JavaScript动态添加 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="grouping-explanation" id="groupingExplanation" style="display: none;">
+                        <h4>分组说明</h4>
+                        <div id="groupingContent"></div>
+                        <div class="group-visualization" id="groupVisualization"></div>
+                    </div>
+                    
+                    <div class="query-result" id="queryResult" style="display: none;">
+                        <div class="query-result-title">查询结果:</div>
+                        <div class="query-result-content" id="queryResultContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 示例数据
+            const studentsData = [
+                {student_id: 1, student_name: '张三', sex: '男', student_age: 19, birthday: '2002-12-01', city: '北京', score: 85},
+                {student_id: 2, student_name: '李四', sex: '男', student_age: 20, birthday: '2001-12-08', city: '上海', score: 92},
+                {student_id: 3, student_name: '王五', sex: '女', student_age: 18, birthday: '1990-12-01', city: '北京', score: 78},
+                {student_id: 4, student_name: '赵六', sex: '男', student_age: 21, birthday: '2000-05-15', city: '广州', score: 88},
+                {student_id: 5, student_name: '钱七', sex: '女', student_age: 19, birthday: '2002-08-22', city: '深圳', score: 95},
+                {student_id: 6, student_name: '孙八', sex: '男', student_age: 20, birthday: '2001-03-10', city: '北京', score: 82},
+                {student_id: 7, student_name: '周九', sex: '女', student_age: 18, birthday: '2003-11-05', city: '上海', score: 90},
+                {student_id: 8, student_name: '吴十', sex: '男', student_age: 22, birthday: '1999-07-30', city: '广州', score: 76},
+                {student_id: 9, student_name: '郑十一', sex: '女', student_age: 19, birthday: '2002-09-14', city: '深圳', score: 89},
+                {student_id: 10, student_name: '王十二', sex: '男', student_age: 21, birthday: '2000-11-20', city: '北京', score: 93}
+            ];
+
+            // 步骤数据
+            const steps = [
+                {
+                    title: "步骤1: 基本查询",
+                    description: "使用SELECT * 查询所有列，FROM指定数据来源表。这是最简单的SELECT语句形式。",
+                    hint: "提示：使用SELECT * FROM table_name查询所有列",
+                    sqlExample: "SELECT * FROM students;",
+                    correctAnswer: "SELECT * FROM students;",
+                    updateAnimation: function() {
+                        // 显示所有数据
+                        displayTableData(studentsData);
+                        displayQueryResult("返回了students表中的所有列和所有记录");
+                        hideGroupingExplanation();
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized === "SELECT * FROM STUDENTS;";
+                            }, 
+                            message: "必须输入 SELECT * FROM students;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤2: 选择特定列",
+                    description: "可以只查询特定的列，减少不必要的数据传输。使用逗号分隔多个列名。",
+                    hint: "提示：使用SELECT column1, column2 FROM table_name查询特定列",
+                    sqlExample: "SELECT student_id, student_name, sex FROM students;",
+                    correctAnswer: "SELECT student_id, student_name, sex FROM students;",
+                    updateAnimation: function() {
+                        // 只显示特定列
+                        const filteredData = studentsData.map(student => ({
+                            student_id: student.student_id,
+                            student_name: student.student_name,
+                            sex: student.sex
+                        }));
+                        displayTableData(filteredData);
+                        displayQueryResult("只返回了学号、姓名和性别三列数据");
+                        hideGroupingExplanation();
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized === "SELECT STUDENT_ID, STUDENT_NAME, SEX FROM STUDENTS;";
+                            }, 
+                            message: "必须输入 SELECT student_id, student_name, sex FROM students;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤3: 列别名",
+                    description: "使用AS关键字为列指定别名，使结果更易读。AS关键字可以省略。",
+                    hint: "提示：使用SELECT column AS alias FROM table_name为列指定别名",
+                    sqlExample: "SELECT student_id AS 学号, student_name AS 姓名 FROM students;",
+                    correctAnswer: "SELECT student_id AS 学号, student_name AS 姓名 FROM students;",
+                    updateAnimation: function() {
+                        // 显示带别名的数据
+                        const aliasedData = studentsData.map(student => ({
+                            学号: student.student_id,
+                            姓名: student.student_name
+                        }));
+                        displayTableData(aliasedData);
+                        displayQueryResult("学号和姓名列分别显示为'学号'和'姓名'");
+                        hideGroupingExplanation();
+                        
+                        // 添加别名高亮
+                        setTimeout(() => {
+                            const headers = document.querySelectorAll('#dataTable th');
+                            if (headers.length >= 2) {
+                                headers[0].classList.add('alias-highlight');
+                                headers[1].classList.add('alias-highlight');
+                            }
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes("SELECT STUDENT_ID AS 学号") && 
+                                       normalized.includes("STUDENT_NAME AS 姓名") &&
+                                       normalized.includes("FROM STUDENTS");
+                            }, 
+                            message: "必须输入 SELECT student_id AS 学号, student_name AS 姓名 FROM students;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤4: DISTINCT去重",
+                    description: "使用DISTINCT关键字去除重复的行。只返回唯一不同的值。",
+                    hint: "提示：使用SELECT DISTINCT column FROM table_name去除重复值",
+                    sqlExample: "SELECT DISTINCT city FROM students;",
+                    correctAnswer: "SELECT DISTINCT city FROM students;",
+                    updateAnimation: function() {
+                        // 显示去重后的城市
+                        const distinctCities = [...new Set(studentsData.map(student => student.city))];
+                        const distinctData = distinctCities.map(city => ({ city }));
+                        displayTableData(distinctData);
+                        displayQueryResult("返回了不重复的学生来源城市列表");
+                        hideGroupingExplanation();
+                        
+                        // 添加去重高亮
+                        setTimeout(() => {
+                            const rows = document.querySelectorAll('#dataTable tr');
+                            rows.forEach(row => row.classList.add('distinct-highlight'));
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized === "SELECT DISTINCT CITY FROM STUDENTS;";
+                            }, 
+                            message: "必须输入 SELECT DISTINCT city FROM students;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤5: WHERE条件筛选",
+                    description: "使用WHERE子句筛选满足特定条件的记录。可以结合比较运算符和逻辑运算符使用。",
+                    hint: "提示：使用WHERE condition筛选记录",
+                    sqlExample: "SELECT * FROM students WHERE sex = '女';",
+                    correctAnswer: "SELECT * FROM students WHERE sex = '女';",
+                    updateAnimation: function() {
+                        // 筛选女学生
+                        const filteredData = studentsData.filter(student => student.sex === '女');
+                        displayTableData(filteredData);
+                        displayQueryResult("筛选出了性别为'女'的学生记录");
+                        hideGroupingExplanation();
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized === "SELECT * FROM STUDENTS WHERE SEX = '女';";
+                            }, 
+                            message: "必须输入 SELECT * FROM students WHERE sex = '女';" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤6: IN查询",
+                    description: "使用IN操作符查询指定值列表中的记录。IN后面跟一个值列表，用逗号分隔。",
+                    hint: "提示：使用WHERE column IN (value1, value2, ...)查询多个值",
+                    sqlExample: "SELECT * FROM students WHERE city IN ('北京', '上海');",
+                    correctAnswer: "SELECT * FROM students WHERE city IN ('北京', '上海');",
+                    updateAnimation: function() {
+                        // 筛选北京和上海的学生
+                        const filteredData = studentsData.filter(student => 
+                            student.city === '北京' || student.city === '上海'
+                        );
+                        displayTableData(filteredData);
+                        displayQueryResult("筛选出来自北京或上海的学生记录");
+                        hideGroupingExplanation();
+                        
+                        // 添加IN高亮
+                        setTimeout(() => {
+                            const rows = document.querySelectorAll('#dataTable tr');
+                            rows.forEach(row => {
+                                const cityCell = row.querySelector('td:nth-child(6)');
+                                if (cityCell && (cityCell.textContent === '北京' || cityCell.textContent === '上海')) {
+                                    row.classList.add('in-highlight');
+                                }
+                            });
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes("SELECT * FROM STUDENTS WHERE CITY IN ('北京', '上海')");
+                            }, 
+                            message: "必须输入 SELECT * FROM students WHERE city IN ('北京', '上海');" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤7: BETWEEN范围查询",
+                    description: "使用BETWEEN操作符查询在某个范围内的记录。BETWEEN包含边界值。",
+                    hint: "提示：使用WHERE column BETWEEN value1 AND value2查询范围",
+                    sqlExample: "SELECT * FROM students WHERE student_age BETWEEN 19 AND 21;",
+                    correctAnswer: "SELECT * FROM students WHERE student_age BETWEEN 19 AND 21;",
+                    updateAnimation: function() {
+                        // 筛选年龄在19-21之间的学生
+                        const filteredData = studentsData.filter(student => 
+                            student.student_age >= 19 && student.student_age <= 21
+                        );
+                        displayTableData(filteredData);
+                        displayQueryResult("筛选出年龄在19到21岁之间的学生记录");
+                        hideGroupingExplanation();
+                        
+                        // 添加BETWEEN高亮
+                        setTimeout(() => {
+                            const rows = document.querySelectorAll('#dataTable tr');
+                            rows.forEach(row => {
+                                const ageCell = row.querySelector('td:nth-child(4)');
+                                if (ageCell) {
+                                    const age = parseInt(ageCell.textContent);
+                                    if (age >= 19 && age <= 21) {
+                                        row.classList.add('between-highlight');
+                                    }
+                                }
+                            });
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes("SELECT * FROM STUDENTS WHERE STUDENT_AGE BETWEEN 19 AND 21");
+                            }, 
+                            message: "必须输入 SELECT * FROM students WHERE student_age BETWEEN 19 AND 21;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤8: 年龄计算",
+                    description: "使用表达式计算列值。这里计算学生年龄，使用YEAR()函数提取年份。",
+                    hint: "提示：使用表达式计算列值，如YEAR(NOW()) - YEAR(birthday)",
+                    sqlExample: "SELECT student_name, YEAR(NOW()) - YEAR(birthday) AS age FROM students;",
+                    correctAnswer: "SELECT student_name, YEAR(NOW()) - YEAR(birthday) AS age FROM students;",
+                    updateAnimation: function() {
+                        // 计算年龄
+                        const currentYear = new Date().getFullYear();
+                        const ageData = studentsData.map(student => ({
+                            student_name: student.student_name,
+                            age: currentYear - parseInt(student.birthday.substring(0, 4))
+                        }));
+                        displayTableData(ageData);
+                        displayQueryResult("通过计算当前年份减去出生年份得到学生年龄");
+                        hideGroupingExplanation();
+                        
+                        // 添加年龄计算高亮
+                        setTimeout(() => {
+                            const rows = document.querySelectorAll('#dataTable tr');
+                            rows.forEach(row => row.classList.add('age-highlight'));
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes("SELECT STUDENT_NAME, YEAR(NOW()) - YEAR(BIRTHDAY) AS AGE FROM STUDENTS");
+                            }, 
+                            message: "必须输入 SELECT student_name, YEAR(NOW()) - YEAR(birthday) AS age FROM students;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤9: GROUP BY分组",
+                    description: "使用GROUP BY对结果进行分组，通常与聚合函数一起使用。按指定列的值进行分组。",
+                    hint: "提示：使用GROUP BY column对结果进行分组",
+                    sqlExample: "SELECT sex, COUNT(*) AS 人数 FROM students GROUP BY sex;",
+                    correctAnswer: "SELECT sex, COUNT(*) AS 人数 FROM students GROUP BY sex;",
+                    updateAnimation: function() {
+                        // 按性别分组统计人数
+                        const groupData = [];
+                        const maleCount = studentsData.filter(s => s.sex === '男').length;
+                        const femaleCount = studentsData.filter(s => s.sex === '女').length;
+                        
+                        groupData.push({ sex: '男', 人数: maleCount });
+                        groupData.push({ sex: '女', 人数: femaleCount });
+                        
+                        displayTableData(groupData);
+                        displayQueryResult("按性别分组统计了男女生人数");
+                        
+                        // 显示分组说明
+                        showGroupingExplanation(
+                            "按性别分组：将学生数据分为'男'和'女'两组，然后统计每组的人数",
+                            [
+                                { group: "男", count: maleCount, color: "#4fc3f7" },
+                                { group: "女", count: femaleCount, color: "#f06292" }
+                            ]
+                        );
+                        
+                        // 添加分组高亮
+                        setTimeout(() => {
+                            const rows = document.querySelectorAll('#dataTable tr');
+                            rows.forEach(row => row.classList.add('group-highlight'));
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes("SELECT SEX, COUNT(*) AS 人数 FROM STUDENTS GROUP BY SEX");
+                            }, 
+                            message: "必须输入 SELECT sex, COUNT(*) AS 人数 FROM students GROUP BY sex;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤10: GROUP BY多列分组",
+                    description: "可以按多个列进行分组，先按第一个列分组，然后在每个组内再按第二个列分组。",
+                    hint: "提示：使用GROUP BY column1, column2进行多列分组",
+                    sqlExample: "SELECT city, sex, COUNT(*) AS 人数 FROM students GROUP BY city, sex;",
+                    correctAnswer: "SELECT city, sex, COUNT(*) AS 人数 FROM students GROUP BY city, sex;",
+                    updateAnimation: function() {
+                        // 按城市和性别分组统计人数
+                        const groups = {};
+                        studentsData.forEach(student => {
+                            const key = `${student.city}-${student.sex}`;
+                            if (!groups[key]) {
+                                groups[key] = {
+                                    city: student.city,
+                                    sex: student.sex,
+                                    人数: 0
+                                };
+                            }
+                            groups[key].人数++;
+                        });
+                        
+                        const groupData = Object.values(groups);
+                        displayTableData(groupData);
+                        displayQueryResult("按城市和性别分组统计了人数");
+                        
+                        // 显示分组说明
+                        const cityGroups = {};
+                        Object.values(groups).forEach(item => {
+                            if (!cityGroups[item.city]) {
+                                cityGroups[item.city] = [];
+                            }
+                            cityGroups[item.city].push(item);
+                        });
+                        
+                        let explanation = "按城市和性别分组：<br>";
+                        Object.keys(cityGroups).forEach(city => {
+                            explanation += `- ${city}: ${cityGroups[city].map(g => `${g.sex}(${g.人数}人)`).join(', ')}<br>`;
+                        });
+                        
+                        showGroupingExplanation(explanation);
+                        
+                        // 添加分组高亮
+                        setTimeout(() => {
+                            const rows = document.querySelectorAll('#dataTable tr');
+                            rows.forEach(row => row.classList.add('group-highlight'));
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes("SELECT CITY, SEX, COUNT(*) AS 人数 FROM STUDENTS GROUP BY CITY, SEX");
+                            }, 
+                            message: "必须输入 SELECT city, sex, COUNT(*) AS 人数 FROM students GROUP BY city, sex;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤11: HAVING分组后筛选",
+                    description: "使用HAVING子句对分组后的结果进行筛选。HAVING在GROUP BY之后执行。",
+                    hint: "提示：使用HAVING condition对分组结果进行筛选",
+                    sqlExample: "SELECT city, COUNT(*) AS 人数 FROM students GROUP BY city HAVING COUNT(*) > 2;",
+                    correctAnswer: "SELECT city, COUNT(*) AS 人数 FROM students GROUP BY city HAVING COUNT(*) > 2;",
+                    updateAnimation: function() {
+                        // 按城市分组，筛选人数大于2的城市
+                        const cityCounts = {};
+                        studentsData.forEach(student => {
+                            cityCounts[student.city] = (cityCounts[student.city] || 0) + 1;
+                        });
+                        
+                        const filteredData = Object.entries(cityCounts)
+                            .filter(([city, count]) => count > 2)
+                            .map(([city, count]) => ({ city, 人数: count }));
+                        
+                        displayTableData(filteredData);
+                        displayQueryResult("按城市分组，筛选出人数大于2的城市");
+                        
+                        // 显示分组说明
+                        let explanation = "按城市分组后筛选：<br>";
+                        explanation += "- 先按城市分组统计人数<br>";
+                        explanation += "- 然后使用HAVING筛选人数大于2的城市<br>";
+                        explanation += `- 筛选结果: ${filteredData.map(item => `${item.city}(${item.人数}人)`).join(', ')}`;
+                        
+                        showGroupingExplanation(explanation);
+                        
+                        // 添加HAVING高亮
+                        setTimeout(() => {
+                            const rows = document.querySelectorAll('#dataTable tr');
+                            rows.forEach(row => row.classList.add('having-highlight'));
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes("SELECT CITY, COUNT(*) AS 人数 FROM STUDENTS GROUP BY CITY HAVING COUNT(*) > 2");
+                            }, 
+                            message: "必须输入 SELECT city, COUNT(*) AS 人数 FROM students GROUP BY city HAVING COUNT(*) > 2;" 
+                        }
+                    ]
+                }
+            ];
+
+            // DOM元素
+            const stepElements = [
+                document.getElementById('step1'),
+                document.getElementById('step2'),
+                document.getElementById('step3'),
+                document.getElementById('step4'),
+                document.getElementById('step5'),
+                document.getElementById('step6'),
+                document.getElementById('step7'),
+                document.getElementById('step8'),
+                document.getElementById('step9'),
+                document.getElementById('step10'),
+                document.getElementById('step11')
+            ];
+            const stepTitle = document.getElementById('stepTitle');
+            const stepDescription = document.getElementById('stepDescription');
+            const hint = document.getElementById('hint');
+            const sqlExample = document.getElementById('sqlExample');
+            const codeInput = document.getElementById('codeInput');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const validationDetails = document.getElementById('validationDetails');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const validateBtn = document.getElementById('validateBtn');
+            const progress = document.getElementById('progress');
+            const animationTitle = document.getElementById('animationTitle');
+            const tableBody = document.getElementById('tableBody');
+            const tableStats = document.getElementById('tableStats');
+            const queryResult = document.getElementById('queryResult');
+            const queryResultContent = document.getElementById('queryResultContent');
+            const groupingExplanation = document.getElementById('groupingExplanation');
+            const groupingContent = document.getElementById('groupingContent');
+            const groupVisualization = document.getElementById('groupVisualization');
+            
+            // 新增的动画元素
+            const codeValidation = document.getElementById('codeValidation');
+            const typingAnimation = document.getElementById('typingAnimation');
+            const syntaxHighlight = document.getElementById('syntaxHighlight');
+
+            // 当前步骤
+            let currentStep = 0;
+            let typingTimer = null;
+            let stepCompleted = false;
+
+            // 显示表格数据
+            function displayTableData(data) {
+                tableBody.innerHTML = '';
+                
+                if (data.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="7" style="text-align: center;">无数据</td>';
+                    tableBody.appendChild(row);
+                    tableStats.textContent = '0 行数据';
+                    return;
+                }
+                
+                // 获取列名
+                const columns = Object.keys(data[0]);
+                
+                // 更新表头
+                const tableHead = document.querySelector('#dataTable thead tr');
+                tableHead.innerHTML = '';
+                columns.forEach(col => {
+                    const th = document.createElement('th');
+                    th.textContent = col;
+                    tableHead.appendChild(th);
+                });
+                
+                // 添加数据行
+                data.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    columns.forEach(col => {
+                        const td = document.createElement('td');
+                        // 如果是聚合函数结果，添加特殊样式
+                        if (typeof item[col] === 'number' && (col === '人数' || col.includes('COUNT') || col.includes('AVG') || col.includes('SUM'))) {
+                            td.innerHTML = `<span class="aggregate-function">${item[col]}</span>`;
+                        } else {
+                            td.textContent = item[col];
+                        }
+                        row.appendChild(td);
+                    });
+                    
+                    // 添加高亮动画
+                    row.classList.add('highlight-row');
+                    
+                    tableBody.appendChild(row);
+                    
+                    // 移除高亮动画
+                    setTimeout(() => {
+                        row.classList.remove('highlight-row');
+                    }, 2000);
+                });
+                
+                tableStats.textContent = `${data.length} 行数据`;
+            }
+
+            // 显示查询结果
+            function displayQueryResult(result) {
+                queryResultContent.textContent = result;
+                queryResult.style.display = 'block';
+            }
+
+            // 显示分组说明
+            function showGroupingExplanation(explanation, groups = []) {
+                groupingContent.innerHTML = explanation;
+                groupingExplanation.style.display = 'block';
+                
+                // 显示分组可视化
+                groupVisualization.innerHTML = '';
+                if (groups.length > 0) {
+                    groups.forEach(group => {
+                        const groupBox = document.createElement('div');
+                        groupBox.className = 'group-box';
+                        groupBox.innerHTML = `
+                            <strong>${group.group}</strong><br>
+                            ${group.count} 人
+                        `;
+                        groupBox.style.borderColor = group.color;
+                        groupVisualization.appendChild(groupBox);
+                        
+                        // 添加高亮动画
+                        setTimeout(() => {
+                            groupBox.classList.add('highlight');
+                        }, 1000);
+                    });
+                }
+            }
+
+            // 隐藏分组说明
+            function hideGroupingExplanation() {
+                groupingExplanation.style.display = 'none';
+            }
+
+            // 初始化表格数据
+            displayTableData(studentsData);
+
+            // 更新步骤显示
+            function updateStepDisplay() {
+                // 更新步骤指示器
+                stepElements.forEach((step, index) => {
+                    step.classList.remove('active', 'completed');
+                    if (index === currentStep) {
+                        step.classList.add('active');
+                    } else if (index < currentStep) {
+                        step.classList.add('completed');
+                    }
+                });
+                
+                // 更新进度条
+                progress.style.width = `${(currentStep / (steps.length - 1)) * 100}%`;
+                
+                // 更新步骤内容
+                stepTitle.textContent = steps[currentStep].title;
+                stepDescription.textContent = steps[currentStep].description;
+                hint.textContent = steps[currentStep].hint;
+                sqlExample.textContent = steps[currentStep].sqlExample;
+                
+                // 更新动画标题
+                animationTitle.textContent = `步骤${currentStep + 1}: ${steps[currentStep].title.split(':')[1]}`;
+                
+                // 重置输入和消息
+                codeInput.value = '';
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
+                validationDetails.style.display = 'none';
+                queryResult.style.display = 'none';
+                
+                // 更新按钮状态
+                prevBtn.disabled = currentStep === 0;
+                nextBtn.disabled = !stepCompleted;
+                
+                // 更新动画
+                steps[currentStep].updateAnimation();
+                
+                // 重置步骤完成状态
+                stepCompleted = false;
+                
+                // 添加打字动画
+                typingAnimation.classList.add('active');
+                setTimeout(() => {
+                    typingAnimation.classList.remove('active');
+                }, 2000);
+            }
+
+            // 验证SQL语句
+            function validateSQL() {
+                const sql = codeInput.value.trim();
+                const currentStepData = steps[currentStep];
+                let isValid = true;
+                let errorMessages = [];
+                
+                // 检查每个验证规则
+                currentStepData.validationRules.forEach(rule => {
+                    if (!rule.check(sql)) {
+                        isValid = false;
+                        errorMessages.push(rule.message);
+                    }
+                });
+                
+                // 显示结果
+                if (isValid) {
+                    successMessage.style.display = 'block';
+                    errorMessage.style.display = 'none';
+                    validationDetails.style.display = 'none';
+                    
+                    // 添加成功动画
+                    codeValidation.classList.add('active', 'validation-success');
+                    setTimeout(() => {
+                        codeValidation.classList.remove('active', 'validation-success');
+                    }, 1500);
+                    
+                    // 标记步骤完成
+                    stepCompleted = true;
+                    nextBtn.disabled = false;
+                    
+                    // 更新动画
+                    steps[currentStep].updateAnimation();
+                } else {
+                    successMessage.style.display = 'none';
+                    errorMessage.style.display = 'block';
+                    validationDetails.style.display = 'block';
+                    validationDetails.innerHTML = `
+                        <strong>验证失败:</strong>
+                        <ul>
+                            ${errorMessages.map(msg => `<li>${msg}</li>`).join('')}
+                        </ul>
+                    `;
+                    
+                    // 添加错误动画
+                    codeValidation.classList.add('active', 'validation-error');
+                    setTimeout(() => {
+                        codeValidation.classList.remove('active', 'validation-error');
+                    }, 500);
+                }
+            }
+
+            // 下一步
+            function nextStep() {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    updateStepDisplay();
+                }
+            }
+
+            // 上一步
+            function prevStep() {
+                if (currentStep > 0) {
+                    currentStep--;
+                    updateStepDisplay();
+                }
+            }
+
+            // 重置
+            function reset() {
+                currentStep = 0;
+                stepCompleted = false;
+                updateStepDisplay();
+            }
+
+            // 事件监听
+            validateBtn.addEventListener('click', validateSQL);
+            nextBtn.addEventListener('click', nextStep);
+            prevBtn.addEventListener('click', prevStep);
+            resetBtn.addEventListener('click', reset);
+            
+            // 输入时添加打字动画
+            codeInput.addEventListener('input', function() {
+                if (typingTimer) {
+                    clearTimeout(typingTimer);
+                }
+                
+                typingAnimation.classList.add('active');
+                
+                typingTimer = setTimeout(() => {
+                    typingAnimation.classList.remove('active');
+                }, 1000);
+            });
+
+            // 初始化
+            updateStepDisplay();
+        });
+    </script>
+</body>
+</html>

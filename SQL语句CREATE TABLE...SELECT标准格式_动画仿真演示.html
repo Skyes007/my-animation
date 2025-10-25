@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CREATE TABLE...SELECT 语句动画演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2a4d8e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            padding: clamp(12px, 3vw, 20px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 2px solid #4fc3f7;
+        }
+
+        .header h1 {
+            font-size: clamp(1.3rem, 4vw, 2.2rem);
+            margin-bottom: 8px;
+            color: #4fc3f7;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        .header p {
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .code-section {
+            flex: 1;
+            padding: clamp(8px, 1.5vw, 15px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 20, 40, 0.8);
+            border-right: 1px solid rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .code-section {
+                border-right: none;
+                border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+            }
+        }
+
+        /* 标准格式样式 - 占左侧40%高度 */
+        .syntax-format {
+            background: linear-gradient(135deg, #0d1b2a, #1e3a5f);
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            margin-bottom: 12px;
+            border: 2px solid #4fc3f7;
+            box-shadow: 
+                0 0 15px rgba(79, 195, 247, 0.4),
+                inset 0 0 15px rgba(79, 195, 247, 0.1);
+            position: relative;
+            overflow: hidden;
+            flex: 0 0 40%; /* 占左侧40%高度 */
+            overflow-y: auto; /* 允许垂直滚动 */
+        }
+
+        .syntax-format::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            animation: shimmer 3s infinite;
+        }
+
+        .syntax-title {
+            color: #4fc3f7;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
+        }
+
+        .syntax-line {
+            margin-bottom: 4px;
+            padding: 6px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            border-radius: 6px;
+            background: rgba(79, 195, 247, 0.15);
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            line-height: 1.3;
+        }
+
+        .syntax-line:hover {
+            background: rgba(79, 195, 247, 0.25);
+            transform: translateX(3px);
+        }
+
+        .syntax-comment {
+            color: #a8d8ff;
+            font-style: italic;
+            margin-left: 8px;
+            font-size: clamp(0.7rem, 1.3vw, 0.8rem);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .required {
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        .optional {
+            color: #ffb74d;
+        }
+
+        .code-editor {
+            flex: 1; /* 占左侧60%高度 */
+            background: #0d1b2a;
+            border-radius: 10px;
+            padding: clamp(10px, 1.5vw, 15px);
+            overflow: auto; /* 允许滚动 */
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.3);
+        }
+
+        .code-line {
+            margin-bottom: 6px;
+            padding: 6px 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            background: rgba(255, 255, 255, 0.05);
+            line-height: 1.3;
+        }
+
+        .code-line.active {
+            background: rgba(79, 195, 247, 0.2);
+            border-left: 3px solid #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .code-line.completed {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 3px solid #4caf50;
+        }
+
+        .animation-section {
+            flex: 1;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 30, 60, 0.6);
+        }
+
+        .animation-section h2 {
+            margin-bottom: 12px;
+            color: #4fc3f7;
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+        }
+
+        .animation-container {
+            flex: 1;
+            background: rgba(13, 27, 42, 0.7);
+            border-radius: 10px;
+            padding: clamp(12px, 2vw, 20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .step-explanation {
+            margin-top: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(0, 30, 60, 0.9), rgba(0, 50, 100, 0.9));
+            border-radius: 8px;
+            border-left: 4px solid #4fc3f7;
+            width: 95%;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: clamp(12px, 2vw, 20px);
+            gap: clamp(8px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-top: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .btn {
+            padding: clamp(8px, 2vw, 12px) clamp(15px, 3vw, 25px);
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            color: white;
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #1976d2, #1e88e5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #546e7a;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-container {
+            padding: clamp(10px, 2vw, 15px);
+            background: rgba(0, 30, 60, 0.7);
+            border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6, #4fc3f7);
+            background-size: 200% 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+            animation: progressShimmer 2s infinite;
+        }
+
+        .step-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+        }
+
+        .step-indicator {
+            padding: 6px 12px;
+            border-radius: 15px;
+            background: rgba(79, 195, 247, 0.2);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .step-indicator.active {
+            background: #4fc3f7;
+            color: #0d1b2a;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            transform: scale(1.1);
+        }
+
+        /* 动画关键帧 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes progressShimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(79, 195, 247, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.5); }
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
+            color: #4caf50;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.3));
+            color: #f44336;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            box-shadow: 0 0 8px rgba(244, 67, 54, 0.3);
+        }
+
+        .format-key {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 6px;
+            text-align: center;
+            line-height: 14px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .required-key {
+            background: #4fc3f7;
+            color: white;
+        }
+
+        .optional-key {
+            background: #ffb74d;
+            color: white;
+        }
+        
+        /* 数据表格样式 */
+        .data-table-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+        }
+        
+        .data-table {
+            width: 95%;
+            height: 90%;
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        
+        .table-header {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.5vw, 1rem);
+            flex-shrink: 0;
+        }
+        
+        .table-body {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .table-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 10px;
+            font-size: clamp(0.7rem, 1.3vw, 0.85rem);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+        
+        .data-cell {
+            flex: 1;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 4px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+        
+        .data-cell:last-child {
+            border-right: none;
+        }
+        
+        .highlight {
+            background-color: rgba(255, 255, 255, 0.3);
+            animation: highlight 1.5s ease;
+        }
+        
+        @keyframes highlight {
+            0% { background-color: rgba(255, 255, 255, 0); }
+            50% { background-color: rgba(255, 255, 255, 0.5); }
+            100% { background-color: rgba(255, 255, 255, 0.3); }
+        }
+        
+        .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background-color: rgba(255, 255, 255, 0.3);
+            cursor: col-resize;
+        }
+        
+        .resize-handle:hover {
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+        
+        /* 小屏幕适配 */
+        @media (max-width: 768px) {
+            .table-row {
+                padding: 4px 6px;
+                font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+            }
+            
+            .data-cell {
+                padding: 0 2px;
+            }
+        }
+        
+        /* 超小屏幕适配 */
+        @media (max-width: 480px) {
+            .table-row {
+                padding: 3px 4px;
+                font-size: clamp(0.5rem, 1vw, 0.65rem);
+            }
+            
+            .data-cell {
+                padding: 0 1px;
+            }
+        }
+        
+        .query-result {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #4fc3f7;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .data-flow {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff5722;
+            border-radius: 50%;
+            animation: dataFlow 2s ease-in-out;
+        }
+        
+        @keyframes dataFlow {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(150px, 0); opacity: 0; }
+        }
+        
+        .record-count {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #4fc3f7;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .between-highlight {
+            background-color: rgba(76, 175, 80, 0.3);
+            animation: betweenHighlight 2s ease-in-out;
+        }
+        
+        @keyframes betweenHighlight {
+            0% { background-color: rgba(76, 175, 80, 0); }
+            50% { background-color: rgba(76, 175, 80, 0.5); }
+            100% { background-color: rgba(76, 175, 80, 0.3); }
+        }
+
+        .initial-data-highlight {
+            background-color: rgba(79, 195, 247, 0.3);
+            animation: initialHighlight 2s ease-in-out;
+        }
+        
+        @keyframes initialHighlight {
+            0% { background-color: rgba(79, 195, 247, 0); }
+            50% { background-color: rgba(79, 195, 247, 0.5); }
+            100% { background-color: rgba(79, 195, 247, 0.3); }
+        }
+
+        .initial-info {
+            text-align: center;
+            padding: 10px;
+            background: rgba(79, 195, 247, 0.1);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #4fc3f7;
+        }
+        
+        .table-creation {
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            animation: tableCreation 2s ease-in-out;
+        }
+        
+        @keyframes tableCreation {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .table-name {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #0d1b2a;
+        }
+        
+        .table-structure {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .table-column {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        
+        .column-name {
+            font-weight: bold;
+        }
+        
+        .column-type {
+            color: #0d1b2a;
+        }
+        
+        .column-constraints {
+            font-size: 0.8rem;
+            color: #0d1b2a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CREATE TABLE...SELECT 语句动画演示</h1>
+            <p>通过分步动画演示CREATE TABLE...SELECT语句的完整语法和执行过程</p>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="step-indicators" id="step-indicators">
+                <!-- 步骤指示器将通过JS动态生成 -->
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="code-section">
+                <!-- 紧凑的标准格式 -->
+                <div class="syntax-format">
+                    <div class="syntax-title">📋 CREATE TABLE...SELECT 语句标准格式</div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">CREATE TABLE</span>
+                        <span class="required">table_name</span>
+                        <span class="syntax-comment"># 创建新表</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[(column_definition, ...)]</span>
+                        <span class="syntax-comment"># 可选的列定义</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">AS</span>
+                        <span class="syntax-comment"># 指定数据来源</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key required-key">R</span>
+                        <span class="required">SELECT ... FROM ...</span>
+                        <span class="syntax-comment"># 选择查询</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[WHERE ...]</span>
+                        <span class="syntax-comment"># 可选的筛选条件</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[GROUP BY ...]</span>
+                        <span class="syntax-comment"># 可选的聚合</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[ORDER BY ...]</span>
+                        <span class="syntax-comment"># 可选的排序</span>
+                    </div>
+                    <div class="syntax-line">
+                        <span class="format-key optional-key">O</span>
+                        <span class="optional">[LIMIT ...]</span>
+                        <span class="syntax-comment"># 可选的限制</span>
+                    </div>
+                </div>
+                
+                <div class="code-editor" id="code-editor">
+                    <!-- 代码行将通过JS动态生成 -->
+                </div>
+            </div>
+            
+            <div class="animation-section">
+                <h2>动画演示</h2>
+                <div class="animation-container">
+                    <div class="table-animation" id="table-animation">
+                        <!-- 动画元素将通过JS动态生成 -->
+                    </div>
+                    <div class="step-explanation" id="step-explanation">
+                        点击"开始演示"按钮查看CREATE TABLE...SELECT语句的完整执行过程
+                    </div>
+                    <div class="success-message" id="success-message"></div>
+                    <div class="error-message" id="error-message"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="prev-btn" disabled>上一步</button>
+            <button class="btn" id="play-btn">开始演示</button>
+            <button class="btn" id="pause-btn" disabled>暂停</button>
+            <button class="btn" id="next-btn" disabled>下一步</button>
+            <button class="btn" id="reset-btn">重置</button>
+        </div>
+    </div>
+
+    <script>
+        // 表结构定义
+        const tableStructure = [
+            { name: 'S_number', type: 'CHAR(10)', constraints: ['PRIMARY KEY'] },
+            { name: 'S_name', type: 'CHAR(20)', constraints: ['NOT NULL', 'UNIQUE'] },
+            { name: 'Sex', type: 'CHAR(2)', constraints: ['CHECK(Sex="男" OR Sex="女")', 'DEFAULT "男"'] },
+            { name: 'Birthday', type: 'DATETIME', constraints: [] },
+            { name: 'BirthPlace', type: 'VARCHAR(50)', constraints: [] },
+            { name: 'Ploitics', type: 'VARCHAR(50)', constraints: [] },
+            { name: 'Class_number', type: 'INT', constraints: ['FOREIGN KEY'] },
+            { name: 'MobilePhone', type: 'VARCHAR(50)', constraints: [] },
+            { name: 'Dormitory', type: 'VARCHAR(50)', constraints: [] }
+        ];
+
+        // 示例数据
+        const studentData = [
+            { S_number: '2009050101', S_name: '丁杰杰', Sex: '男', Birthday: '1997-12-17', BirthPlace: '杭州', Ploitics: '团员', Class_number: '20090501', MobilePhone: '15988880101', Dormitory: '兰101' },
+            { S_number: '2009050102', S_name: '丁圆', Sex: '男', Birthday: '1998-3-28', BirthPlace: '湖州', Ploitics: '团员', Class_number: '20090501', MobilePhone: '15988880102', Dormitory: '兰101' },
+            { S_number: '2009050103', S_name: '范华良', Sex: '男', Birthday: '1999-1-18', BirthPlace: '杭州', Ploitics: '团员', Class_number: '20090501', MobilePhone: '15988880103', Dormitory: '兰101' },
+            { S_number: '2009050104', S_name: '傅霖亮', Sex: '女', Birthday: '1997-12-11', BirthPlace: '宁波', Ploitics: '团员', Class_number: '20090501', MobilePhone: '15988880104', Dormitory: '梅102' },
+            { S_number: '2009050105', S_name: '何平', Sex: '男', Birthday: '1997-12-17', BirthPlace: '宁波', Ploitics: '团员', Class_number: '20090501', MobilePhone: '15988880105', Dormitory: '兰101' },
+            { S_number: '2009050201', S_name: '王海莉', Sex: '女', Birthday: '1998-5-3', BirthPlace: '嘉兴', Ploitics: '党员', Class_number: '20090502', MobilePhone: '15988880106', Dormitory: '梅102' }
+        ];
+
+        // 步骤数据 - 专注于CREATE TABLE...SELECT语句
+        const steps = [
+            {
+                code: "-- CREATE TABLE...SELECT 语句演示开始",
+                explanation: "CREATE TABLE...SELECT语句用于创建新表并从现有表中选择数据，结合了表创建和数据插入功能",
+                animation: "showInitialData",
+                successMessage: "✅ 演示开始！我们将展示CREATE TABLE...SELECT语句的各种用法。"
+            },
+            {
+                code: "CREATE TABLE T_Student_Backup AS SELECT * FROM T_Student;",
+                explanation: "基本用法：创建新表并复制所有数据，新表结构与SELECT查询结果相同",
+                animation: "showBasicCreateTableSelect",
+                successMessage: "✅ 基本CREATE TABLE...SELECT成功！创建了T_Student_Backup表并复制了所有数据。"
+            },
+            {
+                code: "CREATE TABLE T_Student_Simple (S_number, S_name, Sex) AS SELECT S_number, S_name, Sex FROM T_Student;",
+                explanation: "指定列名：创建新表时指定列名，只复制部分列的数据",
+                animation: "showCreateTableWithColumnNames",
+                successMessage: "✅ 指定列名的CREATE TABLE...SELECT成功！创建了包含学号、姓名和性别列的新表。"
+            },
+            {
+                code: "CREATE TABLE T_Student_Male AS SELECT * FROM T_Student WHERE Sex = '男';",
+                explanation: "带条件的创建：创建新表并只复制满足条件的记录",
+                animation: "showCreateTableWithCondition",
+                successMessage: "✅ 带条件的CREATE TABLE...SELECT成功！创建了只包含男学生记录的新表。"
+            },
+            {
+                code: "CREATE TABLE T_Student_Hangzhou AS SELECT S_number, S_name, BirthPlace FROM T_Student WHERE BirthPlace = '杭州';",
+                explanation: "组合使用：同时指定列和条件，创建包含特定列和特定条件记录的新表",
+                animation: "showCreateTableWithColumnsAndCondition",
+                successMessage: "✅ 组合使用的CREATE TABLE...SELECT成功！创建了只包含杭州学生学号、姓名和来源地的新表。"
+            },
+            {
+                code: "CREATE TABLE T_Student_Grouped AS SELECT BirthPlace, COUNT(*) AS Count FROM T_Student GROUP BY BirthPlace;",
+                explanation: "使用聚合函数：创建包含聚合结果的新表",
+                animation: "showCreateTableWithAggregation",
+                successMessage: "✅ 使用聚合函数的CREATE TABLE...SELECT成功！创建了按来源地分组统计人数的表。"
+            },
+            {
+                code: "CREATE TABLE T_Student_Sorted AS SELECT * FROM T_Student ORDER BY Birthday DESC;",
+                explanation: "使用排序：创建包含排序结果的新表",
+                animation: "showCreateTableWithSorting",
+                successMessage: "✅ 使用排序的CREATE TABLE...SELECT成功！创建了按生日降序排列的学生表。"
+            },
+            {
+                code: "CREATE TABLE T_Student_Limited AS SELECT * FROM T_Student LIMIT 3;",
+                explanation: "使用LIMIT：创建包含有限记录的新表",
+                animation: "showCreateTableWithLimit",
+                successMessage: "✅ 使用LIMIT的CREATE TABLE...SELECT成功！创建了只包含前3条记录的学生表。"
+            },
+            {
+                code: "-- CREATE TABLE...SELECT 语句演示完成",
+                explanation: "总结：CREATE TABLE...SELECT语句演示完成，展示了基本用法、条件筛选、列选择、聚合、排序和限制等功能",
+                animation: "showCompletion",
+                successMessage: "🎉 CREATE TABLE...SELECT语句演示完成！已成功展示基本用法、条件筛选、列选择、聚合、排序和限制等功能。"
+            }
+        ];
+
+        // 当前步骤索引
+        let currentStep = 0;
+        let isPlaying = false;
+        let animationInterval;
+        let stepTimer;
+
+        // 初始化
+        function init() {
+            renderCodeLines();
+            renderStepIndicators();
+            setupEventListeners();
+            updateControls();
+            setupTableResize();
+            
+            // 初始显示完整数据表格
+            showInitialDataTable();
+        }
+
+        // 显示初始完整数据表格
+        function showInitialDataTable() {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'T_Student 学生表 - 初始完整数据';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(studentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 数据行 - 显示所有记录
+            studentData.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || '';
+                    dataCell.classList.add('initial-data-highlight');
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            
+            // 记录计数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `共 ${studentData.length} 条记录`;
+            dataTable.appendChild(recordCount);
+            
+            tableContainer.appendChild(dataTable);
+            tableAnimation.innerHTML = '';
+            tableAnimation.appendChild(tableContainer);
+        }
+
+        // 渲染代码行
+        function renderCodeLines() {
+            const codeEditor = document.getElementById('code-editor');
+            codeEditor.innerHTML = '';
+            
+            steps.forEach((step, index) => {
+                const codeLine = document.createElement('div');
+                codeLine.className = 'code-line';
+                codeLine.textContent = step.code;
+                codeLine.dataset.index = index;
+                codeEditor.appendChild(codeLine);
+            });
+            
+            updateCodeHighlight();
+        }
+
+        // 渲染步骤指示器
+        function renderStepIndicators() {
+            const stepIndicators = document.getElementById('step-indicators');
+            stepIndicators.innerHTML = '';
+            
+            steps.forEach((step, index) => {
+                const indicator = document.createElement('div');
+                indicator.className = 'step-indicator';
+                indicator.textContent = `步骤 ${index + 1}`;
+                indicator.dataset.index = index;
+                stepIndicators.appendChild(indicator);
+            });
+            
+            updateStepIndicators();
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            document.getElementById('play-btn').addEventListener('click', startAnimation);
+            document.getElementById('pause-btn').addEventListener('click', pauseAnimation);
+            document.getElementById('prev-btn').addEventListener('click', prevStep);
+            document.getElementById('next-btn').addEventListener('click', nextStep);
+            document.getElementById('reset-btn').addEventListener('click', resetAnimation);
+            
+            // 点击步骤指示器跳转到对应步骤
+            document.querySelectorAll('.step-indicator').forEach(indicator => {
+                indicator.addEventListener('click', function() {
+                    const targetStep = parseInt(this.dataset.index);
+                    if (targetStep !== currentStep) {
+                        goToStep(targetStep);
+                    }
+                });
+            });
+        }
+
+        // 设置表格列宽调整
+        function setupTableResize() {
+            document.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('resize-handle')) {
+                    e.preventDefault();
+                    const cell = e.target.parentElement;
+                    const row = cell.parentElement;
+                    const tableBody = row.parentElement;
+                    const allRows = tableBody.querySelectorAll('.table-row');
+                    
+                    const startX = e.clientX;
+                    const startWidth = cell.offsetWidth;
+                    
+                    function onMouseMove(e) {
+                        const newWidth = startWidth + (e.clientX - startX);
+                        if (newWidth > 30) { // 最小宽度
+                            allRows.forEach(row => {
+                                const cells = row.querySelectorAll('.data-cell');
+                                const index = Array.from(row.children).indexOf(cell);
+                                if (cells[index]) {
+                                    cells[index].style.flex = `0 0 ${newWidth}px`;
+                                }
+                            });
+                        }
+                    }
+                    
+                    function onMouseUp() {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                    }
+                    
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                }
+            });
+        }
+
+        // 开始动画
+        function startAnimation() {
+            if (currentStep >= steps.length - 1) {
+                resetAnimation();
+            }
+            
+            isPlaying = true;
+            updateControls();
+            
+            stepTimer = setTimeout(() => {
+                nextStep();
+                if (isPlaying && currentStep < steps.length - 1) {
+                    startAnimation();
+                } else {
+                    isPlaying = false;
+                    updateControls();
+                }
+            }, 3000);
+        }
+
+        // 暂停动画
+        function pauseAnimation() {
+            isPlaying = false;
+            clearTimeout(stepTimer);
+            updateControls();
+        }
+
+        // 下一步
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                updateStep();
+            }
+        }
+
+        // 上一步
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateStep();
+            }
+        }
+
+        // 重置动画
+        function resetAnimation() {
+            pauseAnimation();
+            currentStep = 0;
+            updateStep();
+        }
+
+        // 跳转到指定步骤
+        function goToStep(stepIndex) {
+            pauseAnimation();
+            currentStep = stepIndex;
+            updateStep();
+        }
+
+        // 更新步骤
+        function updateStep() {
+            updateCodeHighlight();
+            updateStepIndicators();
+            updateProgress();
+            updateExplanation();
+            executeAnimation();
+            updateControls();
+        }
+
+        // 更新代码高亮
+        function updateCodeHighlight() {
+            document.querySelectorAll('.code-line').forEach((line, index) => {
+                line.classList.remove('active', 'completed');
+                
+                if (index === currentStep) {
+                    line.classList.add('active');
+                } else if (index < currentStep) {
+                    line.classList.add('completed');
+                }
+            });
+        }
+
+        // 更新步骤指示器
+        function updateStepIndicators() {
+            document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+                indicator.classList.remove('active');
+                
+                if (index === currentStep) {
+                    indicator.classList.add('active');
+                }
+            });
+        }
+
+        // 更新进度条
+        function updateProgress() {
+            const progress = document.getElementById('progress');
+            const progressPercentage = (currentStep / (steps.length - 1)) * 100;
+            progress.style.width = `${progressPercentage}%`;
+        }
+
+        // 更新解释文本
+        function updateExplanation() {
+            const explanation = document.getElementById('step-explanation');
+            explanation.textContent = steps[currentStep].explanation;
+        }
+
+        // 执行动画
+        function executeAnimation() {
+            const animationFunction = steps[currentStep].animation;
+            if (typeof window[animationFunction] === 'function') {
+                window[animationFunction]();
+            }
+            
+            // 显示成功消息
+            const successMessage = document.getElementById('success-message');
+            successMessage.textContent = steps[currentStep].successMessage || '';
+            successMessage.style.display = steps[currentStep].successMessage ? 'block' : 'none';
+            
+            // 隐藏错误消息
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        // 更新控制按钮状态
+        function updateControls() {
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('next-btn').disabled = currentStep === steps.length - 1;
+            document.getElementById('play-btn').disabled = isPlaying || currentStep === steps.length - 1;
+            document.getElementById('pause-btn').disabled = !isPlaying;
+        }
+
+        // 动画函数
+        function showInitialData() {
+            showInitialDataTable();
+        }
+
+        function showBasicCreateTableSelect() {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'T_Student_Backup 表 - 复制所有数据';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(studentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 数据行 - 显示所有记录
+            studentData.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || '';
+                    dataCell.classList.add('highlight');
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            
+            // 记录计数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `共 ${studentData.length} 条记录`;
+            dataTable.appendChild(recordCount);
+            
+            tableContainer.appendChild(dataTable);
+            tableAnimation.innerHTML = '';
+            tableAnimation.appendChild(tableContainer);
+        }
+
+        function showCreateTableWithColumnNames() {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'T_Student_Simple 表 - 仅包含学号、姓名和性别';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 只显示指定的列
+            const selectedColumns = ['S_number', 'S_name', 'Sex'];
+            
+            selectedColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 数据行 - 显示所有记录，但只显示选定的列
+            studentData.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                selectedColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || '';
+                    dataCell.classList.add('highlight');
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            
+            // 记录计数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `共 ${studentData.length} 条记录`;
+            dataTable.appendChild(recordCount);
+            
+            tableContainer.appendChild(dataTable);
+            tableAnimation.innerHTML = '';
+            tableAnimation.appendChild(tableContainer);
+        }
+
+        function showCreateTableWithCondition() {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'T_Student_Male 表 - 仅包含男学生';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(studentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 数据行 - 只显示男学生
+            const maleStudents = studentData.filter(student => student.Sex === '男');
+            
+            maleStudents.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || '';
+                    dataCell.classList.add('highlight');
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            
+            // 记录计数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `共 ${maleStudents.length} 条记录`;
+            dataTable.appendChild(recordCount);
+            
+            tableContainer.appendChild(dataTable);
+            tableAnimation.innerHTML = '';
+            tableAnimation.appendChild(tableContainer);
+        }
+
+        function showCreateTableWithColumnsAndCondition() {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'T_Student_Hangzhou 表 - 仅包含杭州学生的学号、姓名和来源地';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 只显示指定的列
+            const selectedColumns = ['S_number', 'S_name', 'BirthPlace'];
+            
+            selectedColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 数据行 - 只显示杭州学生
+            const hangzhouStudents = studentData.filter(student => student.BirthPlace === '杭州');
+            
+            hangzhouStudents.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                selectedColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || '';
+                    dataCell.classList.add('highlight');
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            
+            // 记录计数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `共 ${hangzhouStudents.length} 条记录`;
+            dataTable.appendChild(recordCount);
+            
+            tableContainer.appendChild(dataTable);
+            tableAnimation.innerHTML = '';
+            tableAnimation.appendChild(tableContainer);
+        }
+
+        function showCreateTableWithAggregation() {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'T_Student_Grouped 表 - 按来源地分组统计';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 聚合结果的列
+            const selectedColumns = ['BirthPlace', 'Count'];
+            
+            selectedColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 计算聚合结果
+            const groupedData = {};
+            studentData.forEach(student => {
+                const place = student.BirthPlace;
+                if (!groupedData[place]) {
+                    groupedData[place] = 0;
+                }
+                groupedData[place]++;
+            });
+            
+            // 数据行 - 显示聚合结果
+            Object.keys(groupedData).forEach(place => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                const placeCell = document.createElement('div');
+                placeCell.className = 'data-cell';
+                placeCell.textContent = place;
+                placeCell.classList.add('highlight');
+                dataRow.appendChild(placeCell);
+                
+                const countCell = document.createElement('div');
+                countCell.className = 'data-cell';
+                countCell.textContent = groupedData[place];
+                countCell.classList.add('highlight');
+                dataRow.appendChild(countCell);
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            
+            // 记录计数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `共 ${Object.keys(groupedData).length} 个分组`;
+            dataTable.appendChild(recordCount);
+            
+            tableContainer.appendChild(dataTable);
+            tableAnimation.innerHTML = '';
+            tableAnimation.appendChild(tableContainer);
+        }
+
+        function showCreateTableWithSorting() {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'T_Student_Sorted 表 - 按生日降序排列';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(studentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 数据行 - 按生日降序排列
+            const sortedStudents = [...studentData].sort((a, b) => {
+                return new Date(b.Birthday) - new Date(a.Birthday);
+            });
+            
+            sortedStudents.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || '';
+                    dataCell.classList.add('highlight');
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            
+            // 记录计数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `共 ${sortedStudents.length} 条记录`;
+            dataTable.appendChild(recordCount);
+            
+            tableContainer.appendChild(dataTable);
+            tableAnimation.innerHTML = '';
+            tableAnimation.appendChild(tableContainer);
+        }
+
+        function showCreateTableWithLimit() {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'data-table-container';
+            
+            const dataTable = document.createElement('div');
+            dataTable.className = 'data-table';
+            
+            // 表头
+            const tableHeader = document.createElement('div');
+            tableHeader.className = 'table-header';
+            tableHeader.textContent = 'T_Student_Limited 表 - 仅包含前3条记录';
+            dataTable.appendChild(tableHeader);
+            
+            // 表体
+            const tableBody = document.createElement('div');
+            tableBody.className = 'table-body';
+            
+            // 列标题行
+            const headerRow = document.createElement('div');
+            headerRow.className = 'table-row';
+            
+            // 获取所有列名
+            const allColumns = Object.keys(studentData[0]);
+            
+            allColumns.forEach(col => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'data-cell';
+                headerCell.textContent = col;
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.background = 'rgba(0, 0, 0, 0.2)';
+                
+                // 添加调整大小的手柄
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                headerCell.appendChild(resizeHandle);
+                
+                headerRow.appendChild(headerCell);
+            });
+            
+            tableBody.appendChild(headerRow);
+            
+            // 数据行 - 只显示前3条记录
+            const limitedStudents = studentData.slice(0, 3);
+            
+            limitedStudents.forEach((row, rowIndex) => {
+                const dataRow = document.createElement('div');
+                dataRow.className = 'table-row';
+                
+                allColumns.forEach(col => {
+                    const dataCell = document.createElement('div');
+                    dataCell.className = 'data-cell';
+                    dataCell.textContent = row[col] || '';
+                    dataCell.classList.add('highlight');
+                    dataRow.appendChild(dataCell);
+                });
+                
+                tableBody.appendChild(dataRow);
+            });
+            
+            dataTable.appendChild(tableBody);
+            
+            // 记录计数
+            const recordCount = document.createElement('div');
+            recordCount.className = 'record-count';
+            recordCount.textContent = `共 ${limitedStudents.length} 条记录`;
+            dataTable.appendChild(recordCount);
+            
+            tableContainer.appendChild(dataTable);
+            tableAnimation.innerHTML = '';
+            tableAnimation.appendChild(tableContainer);
+        }
+
+        function showCompletion() {
+            const tableAnimation = document.getElementById('table-animation');
+            
+            const completionContainer = document.createElement('div');
+            completionContainer.className = 'data-table-container';
+            
+            const completionMessage = document.createElement('div');
+            completionMessage.className = 'table-creation';
+            
+            const title = document.createElement('div');
+            title.className = 'table-name';
+            title.textContent = 'CREATE TABLE...SELECT 演示完成';
+            
+            const summary = document.createElement('div');
+            summary.style.marginTop = '15px';
+            summary.style.fontSize = '1rem';
+            summary.innerHTML = `
+                <p>已成功演示以下功能：</p>
+                <ul style="text-align: left; margin-top: 10px; padding-left: 20px;">
+                    <li>基本用法 - 复制所有数据</li>
+                    <li>指定列名 - 只复制部分列</li>
+                    <li>条件筛选 - 只复制满足条件的记录</li>
+                    <li>组合使用 - 同时指定列和条件</li>
+                    <li>聚合函数 - 创建包含聚合结果的新表</li>
+                    <li>排序 - 创建包含排序结果的新表</li>
+                    <li>限制记录数 - 创建包含有限记录的新表</li>
+                </ul>
+            `;
+            
+            completionMessage.appendChild(title);
+            completionMessage.appendChild(summary);
+            completionContainer.appendChild(completionMessage);
+            
+            tableAnimation.innerHTML = '';
+            tableAnimation.appendChild(completionContainer);
+        }
+
+        // 初始化应用
+        window.onload = init;
+    </script>
+</body>
+</html>

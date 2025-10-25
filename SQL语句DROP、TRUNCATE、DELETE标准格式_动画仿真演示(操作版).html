@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL DROP/TRUNCATE/DELETE 语句动画演示</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a2a6c, #3498db, #87CEEB);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #1a73e8, #0d47a1);
+            color: white;
+            padding: clamp(12px, 2vw, 20px);
+            text-align: center;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .header h1 {
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .left-panel {
+            flex: 1;
+            padding: clamp(15px, 2vw, 25px);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding: clamp(15px, 2vw, 25px);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e0e0e0;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: #1a73e8;
+            color: white;
+            box-shadow: 0 0 10px rgba(26, 115, 232, 0.7);
+            animation: pulse 1.5s infinite;
+        }
+
+        .step.completed {
+            background: #0f9d58;
+            color: white;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #1a73e8, #0d47a1);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .step-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .step-title {
+            font-size: clamp(1.2rem, 2vw, 1.6rem);
+            margin-bottom: 15px;
+            color: #1a73e8;
+            font-weight: 600;
+        }
+
+        .step-description {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            color: #555;
+        }
+
+        .code-editor {
+            background: #282c34;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #abb2bf;
+            font-size: 0.9rem;
+        }
+
+        .code-area {
+            flex: 1;
+            background: #1e2227;
+            border-radius: 5px;
+            padding: 15px;
+            overflow: auto;
+            position: relative;
+        }
+
+        .code-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #abb2bf;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            position: relative;
+            z-index: 2;
+        }
+
+        .code-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .hint {
+            background: #e3f2fd;
+            border-left: 4px solid #1a73e8;
+            padding: 10px 15px;
+            margin-top: 10px;
+            border-radius: 0 5px 5px 0;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+
+        .sql-example {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 12px;
+            margin-top: 10px;
+            border-left: 4px solid #1a73e8;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+
+        .animation-area {
+            flex: 1;
+            background: #f5f9ff;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e1f5fe;
+            animation: glow 2s infinite alternate;
+        }
+
+        .animation-title {
+            text-align: center;
+            font-size: clamp(1.2rem, 2vw, 1.6rem);
+            margin-bottom: 15px;
+            color: #0d47a1;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-prev {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-next {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-validate {
+            background: #4caf50;
+            color: white;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            background: #e0e0e0;
+            color: #9e9e9e;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(26, 115, 232, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05); }
+            100% { box-shadow: 0 5px 20px rgba(33, 150, 243, 0.3); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 表格样式 */
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            margin-top: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            background: white;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .data-table th {
+            background: #1a73e8;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table tr:nth-child(even) {
+            background: #f5f9ff;
+        }
+
+        .data-table tr:hover {
+            background: #e3f2fd;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .table-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0d47a1;
+        }
+
+        .table-stats {
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .highlight-row {
+            animation: highlight 2s ease;
+        }
+
+        @keyframes highlight {
+            0% { background-color: #fff9c4; }
+            100% { background-color: transparent; }
+        }
+
+        .code-validation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .code-validation.active {
+            opacity: 1;
+        }
+
+        .validation-success {
+            background: linear-gradient(90deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.2));
+            animation: successGlow 1.5s ease;
+        }
+
+        .validation-error {
+            background: linear-gradient(90deg, rgba(244, 67, 54, 0.1), rgba(244, 67, 54, 0.2));
+            animation: errorShake 0.5s ease;
+        }
+
+        @keyframes successGlow {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            50% { box-shadow: 0 0 20px 10px rgba(76, 175, 80, 0.3); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .typing-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: typing 2s infinite;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .typing-animation.active {
+            opacity: 1;
+        }
+
+        @keyframes typing {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .syntax-highlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .validation-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff3e0;
+            border-radius: 5px;
+            border-left: 4px solid #ff9800;
+            font-size: 0.85rem;
+            color: #e65100;
+        }
+
+        .validation-details ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .validation-details li {
+            margin-bottom: 3px;
+        }
+
+        /* 标准语句格式样式 */
+        .syntax-guide {
+            background: #f0f7ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #bbdefb;
+        }
+
+        .syntax-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1565c0;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .syntax-structure {
+            background: #e3f2fd;
+            border-radius: 5px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #0d47a1;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .syntax-keyword {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+
+        .syntax-parameter {
+            color: #388e3c;
+            font-weight: bold;
+        }
+
+        .syntax-optional {
+            color: #7b1fa2;
+            font-style: italic;
+        }
+
+        .syntax-explanation {
+            font-size: 0.85rem;
+            color: #546e7a;
+            line-height: 1.5;
+        }
+
+        .syntax-explanation ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .syntax-explanation li {
+            margin-bottom: 3px;
+        }
+
+        .table-structure {
+            background: #e8f5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #4caf50;
+        }
+
+        .table-structure-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .constraint-info {
+            font-size: 0.8rem;
+            color: #555;
+            margin-top: 5px;
+        }
+
+        .constraint-primary {
+            color: #d32f2f;
+        }
+
+        .constraint-default {
+            color: #7b1fa2;
+        }
+
+        .constraint-auto {
+            color: #1976d2;
+        }
+        
+        .query-result {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .query-result-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2e7d32;
+        }
+        
+        .query-result-content {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .delete-highlight {
+            background-color: #ffebee !important;
+            animation: deleteHighlight 2s ease;
+        }
+        
+        @keyframes deleteHighlight {
+            0% { background-color: #ffcdd2; }
+            100% { background-color: #ffebee; }
+        }
+        
+        .truncate-highlight {
+            background-color: #fff3e0 !important;
+            animation: truncateHighlight 2s ease;
+        }
+        
+        @keyframes truncateHighlight {
+            0% { background-color: #ffe0b2; }
+            100% { background-color: #fff3e0; }
+        }
+        
+        .drop-highlight {
+            background-color: #fce4ec !important;
+            animation: dropHighlight 2s ease;
+        }
+        
+        @keyframes dropHighlight {
+            0% { background-color: #f8bbd9; }
+            100% { background-color: #fce4ec; }
+        }
+        
+        .table-dropped {
+            animation: tableDrop 2s ease;
+        }
+        
+        @keyframes tableDrop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        .empty-table {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 1.2rem;
+            color: #757575;
+            font-style: italic;
+        }
+        
+        .transaction-log {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffb74d;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            max-width: 200px;
+        }
+        
+        .new-record-highlight {
+            background-color: #e8f5e9 !important;
+            animation: newRecordHighlight 2s ease;
+        }
+        
+        @keyframes newRecordHighlight {
+            0% { background-color: #c8e6c9; }
+            100% { background-color: #e8f5e9; }
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+        
+        .comparison-table th, .comparison-table td {
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+        }
+        
+        .comparison-table th {
+            background: #1a73e8;
+            color: white;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f5f9ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SQL DROP/TRUNCATE/DELETE 语句动画演示</h1>
+            <p>DROP/TRUNCATE/DELETE语句类型与效果 - 交互式学习体验</p>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+        
+        <div class="content">
+            <div class="left-panel">
+                <div class="step-indicator">
+                    <div class="step active" id="step1">1</div>
+                    <div class="step" id="step2">2</div>
+                    <div class="step" id="step3">3</div>
+                    <div class="step" id="step4">4</div>
+                    <div class="step" id="step5">5</div>
+                    <div class="step" id="step6">6</div>
+                    <div class="step" id="step7">7</div>
+                </div>
+                
+                <div class="step-content">
+                    <h2 class="step-title" id="stepTitle">步骤1: DELETE语句 - 条件删除</h2>
+                    <p class="step-description" id="stepDescription">使用DELETE FROM语句删除满足特定条件的记录。DELETE语句可以指定WHERE子句来筛选要删除的记录。</p>
+                    
+                    <div class="code-editor">
+                        <div class="code-header">
+                            <span>SQL 编辑器</span>
+                            <span>MySQL</span>
+                        </div>
+                        <div class="code-area">
+                            <textarea class="code-input" id="codeInput" placeholder="在此输入SQL语句..."></textarea>
+                            <div class="code-background">
+                                <div class="code-validation" id="codeValidation"></div>
+                                <div class="typing-animation" id="typingAnimation"></div>
+                                <div class="syntax-highlight" id="syntaxHighlight"></div>
+                            </div>
+                        </div>
+                        <div class="hint" id="hint">提示：使用DELETE FROM table_name WHERE condition删除满足条件的记录</div>
+                        <div class="sql-example" id="sqlExample">示例：DELETE FROM students WHERE student_age > 19;</div>
+                    </div>
+                    
+                    <div class="success-message" id="successMessage">✓ 正确！SQL语句执行成功。</div>
+                    <div class="error-message" id="errorMessage">✗ 错误！请检查SQL语句是否正确。</div>
+                    <div class="validation-details" id="validationDetails" style="display: none;"></div>
+                    
+                    <div class="controls">
+                        <button class="btn btn-prev" id="prevBtn" disabled>上一步</button>
+                        <button class="btn btn-validate" id="validateBtn">验证SQL</button>
+                        <button class="btn btn-next" id="nextBtn" disabled>下一步</button>
+                        <button class="btn btn-reset" id="resetBtn">重置</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <!-- 标准语句格式区域 -->
+                <div class="syntax-guide">
+                    <div class="syntax-title">DROP/TRUNCATE/DELETE 标准语句格式</div>
+                    <div class="syntax-structure">
+                        <span class="syntax-keyword">DELETE FROM</span> <span class="syntax-parameter">table_name</span><br>
+                        <span class="syntax-optional">[WHERE condition]</span>;<br><br>
+                        <span class="syntax-keyword">TRUNCATE TABLE</span> <span class="syntax-parameter">table_name</span>;<br><br>
+                        <span class="syntax-keyword">DROP TABLE</span> <span class="syntax-optional">[IF EXISTS]</span> <span class="syntax-parameter">table_name</span>;
+                    </div>
+                    <div class="syntax-explanation">
+                        <strong>参数说明：</strong>
+                        <ul>
+                            <li><span class="syntax-keyword">DELETE FROM</span> - 删除表中的数据</li>
+                            <li><span class="syntax-parameter">table_name</span> - 要操作的表名</li>
+                            <li><span class="syntax-optional">WHERE</span> - 筛选条件（可选）</li>
+                            <li><span class="syntax-keyword">TRUNCATE TABLE</span> - 清空表数据，保留表结构</li>
+                            <li><span class="syntax-keyword">DROP TABLE</span> - 删除整个表，包括表结构和数据</li>
+                            <li><span class="syntax-optional">IF EXISTS</span> - 如果表存在才删除（可选）</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 表结构信息 -->
+                <div class="table-structure">
+                    <div class="table-structure-title">students表结构</div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        <tr>
+                            <th style="padding: 8px; text-align: left; background: #4caf50; color: white;">列名</th>
+                            <th style="padding: 8px; text-align: left; background: #4caf50; color: white;">数据类型</th>
+                            <th style="padding: 8px; text-align: left; background: #4caf50; color: white;">约束</th>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">student_id</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">INT</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">
+                                <span class="constraint-primary">PRIMARY KEY</span>
+                                <span class="constraint-auto">AUTO_INCREMENT</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">student_name</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">VARCHAR(50)</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">NOT NULL</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">sex</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">CHAR(2)</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">NOT NULL</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">student_age</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">INT</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">
+                                <span class="constraint-default">DEFAULT 18</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">birthday</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">DATE</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">NULL</td>
+                        </tr>
+                    </table>
+                    <div class="constraint-info">
+                        <strong>注意：</strong> student_id 是自增主键，当前最大值为12
+                    </div>
+                </div>
+
+                <div class="animation-area">
+                    <h3 class="animation-title" id="animationTitle">查询结果</h3>
+                    
+                    <div class="table-header">
+                        <div class="table-title">students表数据</div>
+                        <div class="table-stats" id="tableStats">7 行数据</div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table" id="dataTable">
+                            <thead>
+                                <tr>
+                                    <th>student_id</th>
+                                    <th>student_name</th>
+                                    <th>sex</th>
+                                    <th>student_age</th>
+                                    <th>birthday</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- 表格数据将通过JavaScript动态添加 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="query-result" id="queryResult" style="display: none;">
+                        <div class="query-result-title">查询结果:</div>
+                        <div class="query-result-content" id="queryResultContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 示例数据
+            const studentsData = [
+                {student_id: 1, student_name: '张三', sex: '男', student_age: 19, birthday: '2002-12-01'},
+                {student_id: 2, student_name: '李四', sex: '男', student_age: 20, birthday: '2001-12-08'},
+                {student_id: 3, student_name: '王五', sex: '女', student_age: 18, birthday: '1990-12-01'},
+                {student_id: 4, student_name: '赵六', sex: '男', student_age: 18, birthday: null},
+                {student_id: 10, student_name: '陈一', sex: '男', student_age: 18, birthday: '2003-11-01'},
+                {student_id: 11, student_name: '陈二', sex: '男', student_age: 19, birthday: '2002-12-01'},
+                {student_id: 12, student_name: '陈三', sex: '男', student_age: 20, birthday: '2001-10-01'}
+            ];
+
+            // 步骤数据
+            const steps = [
+                {
+                    title: "步骤1: DELETE语句 - 条件删除",
+                    description: "使用DELETE FROM语句删除满足特定条件的记录。DELETE语句可以指定WHERE子句来筛选要删除的记录。",
+                    hint: "提示：使用DELETE FROM table_name WHERE condition删除满足条件的记录",
+                    sqlExample: "DELETE FROM students WHERE student_age > 19;",
+                    correctAnswer: "DELETE FROM students WHERE student_age > 19;",
+                    updateAnimation: function() {
+                        // 显示所有数据，高亮年龄大于19的记录
+                        displayTableData(studentsData);
+                        displayQueryResult("将删除年龄大于19岁的学生记录");
+                        
+                        // 添加删除高亮
+                        setTimeout(() => {
+                            const rows = document.querySelectorAll('#dataTable tr');
+                            rows.forEach((row, index) => {
+                                if (index > 0) { // 跳过表头
+                                    const ageCell = row.querySelector('td:nth-child(4)');
+                                    if (ageCell) {
+                                        const age = parseInt(ageCell.textContent);
+                                        if (age > 19) {
+                                            row.classList.add('delete-highlight');
+                                        }
+                                    }
+                                }
+                            });
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized === "DELETE FROM STUDENTS WHERE STUDENT_AGE > 19;";
+                            }, 
+                            message: "必须输入 DELETE FROM students WHERE student_age > 19;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤2: DELETE语句 - 删除所有记录",
+                    description: "使用DELETE FROM语句删除所有记录，保留表结构和自增字段当前值。",
+                    hint: "提示：使用DELETE FROM table_name删除所有记录",
+                    sqlExample: "DELETE FROM students;",
+                    correctAnswer: "DELETE FROM students;",
+                    updateAnimation: function() {
+                        // 显示空表
+                        const emptyData = [];
+                        displayTableData(emptyData);
+                        displayQueryResult("删除了所有学生记录，保留表结构，自增字段当前值为12");
+                        
+                        // 添加删除高亮
+                        setTimeout(() => {
+                            const tableBody = document.getElementById('tableBody');
+                            tableBody.innerHTML = '<tr><td colspan="5" class="empty-table">表已清空，无数据</td></tr>';
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized === "DELETE FROM STUDENTS;";
+                            }, 
+                            message: "必须输入 DELETE FROM students;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤3: INSERT语句 - 插入新记录",
+                    description: "在DELETE后插入新记录，自增字段继续从之前的值开始递增。",
+                    hint: "提示：使用INSERT INTO table_name VALUES(...)插入新记录",
+                    sqlExample: "INSERT INTO students(student_name, sex, birthday) VALUES('王五', '女', '1990-12-01');",
+                    correctAnswer: "INSERT INTO students(student_name, sex, birthday) VALUES('王五', '女', '1990-12-01');",
+                    updateAnimation: function() {
+                        // 显示插入后的数据
+                        const newData = [
+                            {student_id: 13, student_name: '王五', sex: '女', student_age: 18, birthday: '1990-12-01'}
+                        ];
+                        displayTableData(newData);
+                        displayQueryResult("插入新记录，student_id为13，继续之前的自增值");
+                        
+                        // 添加新记录高亮
+                        setTimeout(() => {
+                            const rows = document.querySelectorAll('#dataTable tr');
+                            rows.forEach(row => row.classList.add('new-record-highlight'));
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes("INSERT INTO STUDENTS") && 
+                                       normalized.includes("VALUES");
+                            }, 
+                            message: "必须输入 INSERT INTO students 语句" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤4: TRUNCATE语句 - 清空表数据",
+                    description: "使用TRUNCATE TABLE语句清空表数据，重置自增字段为初始值。",
+                    hint: "提示：使用TRUNCATE TABLE table_name清空表数据",
+                    sqlExample: "TRUNCATE TABLE students;",
+                    correctAnswer: "TRUNCATE TABLE students;",
+                    updateAnimation: function() {
+                        // 显示空表
+                        const emptyData = [];
+                        displayTableData(emptyData);
+                        displayQueryResult("清空表数据，重置自增字段为初始值");
+                        
+                        // 添加TRUNCATE高亮
+                        setTimeout(() => {
+                            const tableBody = document.getElementById('tableBody');
+                            tableBody.innerHTML = '<tr><td colspan="5" class="empty-table">表已清空，自增字段重置</td></tr>';
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized === "TRUNCATE TABLE STUDENTS;";
+                            }, 
+                            message: "必须输入 TRUNCATE TABLE students;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤5: INSERT语句 - TRUNCATE后插入",
+                    description: "在TRUNCATE后插入新记录，自增字段从初始值开始。",
+                    hint: "提示：使用INSERT INTO table_name VALUES(...)插入新记录",
+                    sqlExample: "INSERT INTO students(student_name, sex, birthday) VALUES('赵六', '男', NULL);",
+                    correctAnswer: "INSERT INTO students(student_name, sex, birthday) VALUES('赵六', '男', NULL);",
+                    updateAnimation: function() {
+                        // 显示插入后的数据
+                        const newData = [
+                            {student_id: 1, student_name: '赵六', sex: '男', student_age: 18, birthday: null}
+                        ];
+                        displayTableData(newData);
+                        displayQueryResult("插入新记录，student_id为1，自增字段已重置");
+                        
+                        // 添加新记录高亮
+                        setTimeout(() => {
+                            const rows = document.querySelectorAll('#dataTable tr');
+                            rows.forEach(row => row.classList.add('new-record-highlight'));
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized.includes("INSERT INTO STUDENTS") && 
+                                       normalized.includes("VALUES");
+                            }, 
+                            message: "必须输入 INSERT INTO students 语句" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤6: DROP语句 - 删除表",
+                    description: "使用DROP TABLE语句删除整个表，包括表结构和数据。",
+                    hint: "提示：使用DROP TABLE table_name删除表",
+                    sqlExample: "DROP TABLE students;",
+                    correctAnswer: "DROP TABLE students;",
+                    updateAnimation: function() {
+                        // 显示表被删除
+                        const tableContainer = document.querySelector('.table-container');
+                        tableContainer.innerHTML = '<div class="empty-table">表已被删除，无法显示数据</div>';
+                        tableContainer.classList.add('drop-highlight');
+                        displayQueryResult("表students已被删除，包括表结构和所有数据");
+                        
+                        // 添加DROP动画
+                        setTimeout(() => {
+                            const animationArea = document.querySelector('.animation-area');
+                            animationArea.classList.add('drop-highlight');
+                        }, 500);
+                    },
+                    validationRules: [
+                        { 
+                            check: (sql) => {
+                                const normalized = sql.replace(/\s+/g, ' ').toUpperCase().trim();
+                                return normalized === "DROP TABLE STUDENTS;";
+                            }, 
+                            message: "必须输入 DROP TABLE students;" 
+                        }
+                    ]
+                },
+                {
+                    title: "步骤7: 总结与比较",
+                    description: "比较DELETE、TRUNCATE和DROP三种语句的区别和适用场景。",
+                    hint: "提示：查看下方比较表格了解三种语句的区别",
+                    sqlExample: "",
+                    correctAnswer: "",
+                    updateAnimation: function() {
+                        // 显示比较表格
+                        const tableContainer = document.querySelector('.table-container');
+                        tableContainer.innerHTML = `
+                            <table class="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>语句</th>
+                                        <th>删除内容</th>
+                                        <th>自增字段</th>
+                                        <th>表结构</th>
+                                        <th>可回滚</th>
+                                        <th>执行速度</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>DELETE</td>
+                                        <td>数据</td>
+                                        <td>保持原值</td>
+                                        <td>保留</td>
+                                        <td>是</td>
+                                        <td>慢</td>
+                                    </tr>
+                                    <tr>
+                                        <td>TRUNCATE</td>
+                                        <td>数据</td>
+                                        <td>重置</td>
+                                        <td>保留</td>
+                                        <td>否</td>
+                                        <td>快</td>
+                                    </tr>
+                                    <tr>
+                                        <td>DROP</td>
+                                        <td>数据+结构</td>
+                                        <td>-</td>
+                                        <td>删除</td>
+                                        <td>否</td>
+                                        <td>最快</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        `;
+                        displayQueryResult("三种删除语句的比较总结");
+                    },
+                    validationRules: []
+                }
+            ];
+
+            // 当前步骤索引
+            let currentStep = 0;
+
+            // DOM元素
+            const stepElements = document.querySelectorAll('.step');
+            const stepTitle = document.getElementById('stepTitle');
+            const stepDescription = document.getElementById('stepDescription');
+            const hint = document.getElementById('hint');
+            const sqlExample = document.getElementById('sqlExample');
+            const codeInput = document.getElementById('codeInput');
+            const validateBtn = document.getElementById('validateBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const progress = document.getElementById('progress');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const validationDetails = document.getElementById('validationDetails');
+            const codeValidation = document.getElementById('codeValidation');
+            const typingAnimation = document.getElementById('typingAnimation');
+            const animationTitle = document.getElementById('animationTitle');
+            const tableStats = document.getElementById('tableStats');
+            const queryResult = document.getElementById('queryResult');
+            const queryResultContent = document.getElementById('queryResultContent');
+
+            // 初始化
+            updateStep();
+
+            // 事件监听
+            validateBtn.addEventListener('click', validateSQL);
+            prevBtn.addEventListener('click', goToPrevStep);
+            nextBtn.addEventListener('click', goToNextStep);
+            resetBtn.addEventListener('click', resetDemo);
+
+            // 更新步骤
+            function updateStep() {
+                const step = steps[currentStep];
+                
+                // 更新步骤指示器
+                stepElements.forEach((element, index) => {
+                    element.classList.remove('active', 'completed');
+                    if (index < currentStep) {
+                        element.classList.add('completed');
+                    } else if (index === currentStep) {
+                        element.classList.add('active');
+                    }
+                });
+                
+                // 更新进度条
+                progress.style.width = `${(currentStep / (steps.length - 1)) * 100}%`;
+                
+                // 更新内容
+                stepTitle.textContent = step.title;
+                stepDescription.textContent = step.description;
+                hint.textContent = step.hint;
+                sqlExample.textContent = step.sqlExample;
+                codeInput.value = '';
+                
+                // 更新按钮状态
+                prevBtn.disabled = currentStep === 0;
+                nextBtn.disabled = currentStep === steps.length - 1 || !step.correctAnswer;
+                
+                // 隐藏消息
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
+                validationDetails.style.display = 'none';
+                codeValidation.classList.remove('active', 'validation-success', 'validation-error');
+                typingAnimation.classList.remove('active');
+                
+                // 更新动画
+                step.updateAnimation();
+                
+                // 如果是最后一步，禁用验证按钮
+                if (currentStep === steps.length - 1) {
+                    validateBtn.disabled = true;
+                    codeInput.disabled = true;
+                } else {
+                    validateBtn.disabled = false;
+                    codeInput.disabled = false;
+                }
+            }
+
+            // 验证SQL
+            function validateSQL() {
+                const sql = codeInput.value.trim();
+                const step = steps[currentStep];
+                
+                // 隐藏之前的消息
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
+                validationDetails.style.display = 'none';
+                codeValidation.classList.remove('active', 'validation-success', 'validation-error');
+                
+                // 检查SQL
+                let isValid = true;
+                let errorMessages = [];
+                
+                for (const rule of step.validationRules) {
+                    if (!rule.check(sql)) {
+                        isValid = false;
+                        errorMessages.push(rule.message);
+                    }
+                }
+                
+                if (isValid) {
+                    // 验证成功
+                    successMessage.style.display = 'block';
+                    codeValidation.classList.add('active', 'validation-success');
+                    nextBtn.disabled = false;
+                    
+                    // 更新动画
+                    step.updateAnimation();
+                } else {
+                    // 验证失败
+                    errorMessage.style.display = 'block';
+                    codeValidation.classList.add('active', 'validation-error');
+                    
+                    // 显示详细错误信息
+                    if (errorMessages.length > 0) {
+                        validationDetails.innerHTML = '<strong>错误详情:</strong><ul>' + 
+                            errorMessages.map(msg => `<li>${msg}</li>`).join('') + '</ul>';
+                        validationDetails.style.display = 'block';
+                    }
+                }
+            }
+
+            // 上一步
+            function goToPrevStep() {
+                if (currentStep > 0) {
+                    currentStep--;
+                    updateStep();
+                }
+            }
+
+            // 下一步
+            function goToNextStep() {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    updateStep();
+                }
+            }
+
+            // 重置演示
+            function resetDemo() {
+                currentStep = 0;
+                updateStep();
+            }
+
+            // 显示表格数据
+            function displayTableData(data) {
+                const tableBody = document.getElementById('tableBody');
+                tableBody.innerHTML = '';
+                
+                if (data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5" class="empty-table">无数据</td></tr>';
+                    tableStats.textContent = '0 行数据';
+                    return;
+                }
+                
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.student_id}</td>
+                        <td>${row.student_name}</td>
+                        <td>${row.sex}</td>
+                        <td>${row.student_age}</td>
+                        <td>${row.birthday || 'NULL'}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+                
+                tableStats.textContent = `${data.length} 行数据`;
+            }
+
+            // 显示查询结果
+            function displayQueryResult(result) {
+                queryResultContent.textContent = result;
+                queryResult.style.display = 'block';
+            }
+
+            // 初始显示表格数据
+            displayTableData(studentsData);
+        });
+    </script>
+</body>
+</html>
